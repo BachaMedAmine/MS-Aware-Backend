@@ -15,6 +15,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { MedicationModule } from './medication/medication.module';
 import { PythonRunnerService } from './ai_model/python-runner.service';
 import { NotificationModule } from './notification/notification.module';
+import { AuthController } from './auth/auth.controller';
 
 @Module({
   imports: [
@@ -50,7 +51,7 @@ import { NotificationModule } from './notification/notification.module';
     MedicationModule,
     NotificationModule, // Add this line
   ],
-  controllers: [AppController],
+  controllers: [AppController,AuthController],
   providers: [AppService, PythonRunnerService],
 })
 export class AppModule {}

@@ -177,7 +177,7 @@ export class AuthController {
     res.json({ token: jwtToken });
   }
 
-  @Post('auth/apple/login')
+  @Post('apple/login')
   async appleLogin(@Body() body: { identityToken: string }, @Res() res) {
     const { identityToken } = body;
     if (!identityToken) throw new UnauthorizedException('Missing Apple token');

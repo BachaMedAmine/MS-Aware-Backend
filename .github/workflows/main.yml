@@ -27,5 +27,7 @@ jobs:
             git pull
             echo "Starting dev server..."
             nohup npm run start:dev > out.log 2>&1 &
+            echo "Deployment finished. Exiting SSH session."
+            exit
 
           EOF

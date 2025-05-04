@@ -24,8 +24,8 @@ jobs:
             echo "Killing old dev server..."
             kill -9 $(ps aux | grep 'npm run start:dev' | grep -v grep | awk '{print $2}') $(lsof -t -i :3000) || true
             echo "Pulling latest code..."
-            cd /path/to/your/app
-            git pull origin main
+            cd /home/medaminebecha/MS-Aware-Backend
+            git pull
             echo "Starting dev server..."
             nohup npm run start:dev > out.log 2>&1 &
           EOF

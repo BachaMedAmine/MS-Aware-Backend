@@ -15,7 +15,7 @@ app.useGlobalPipes(new ValidationPipe());
 
 // Swagger configuration
 const config = new DocumentBuilder()
-.setTitle('MsAware API')
+.setTitle('MsAware 2.0 API')
 .setDescription('API documentation for BlackMirror : A platform for monitoring and managing healthcare industry professionals and patients')
 .setVersion('1.0')
 .addBearerAuth()
@@ -23,6 +23,8 @@ const config = new DocumentBuilder()
 
 const document = SwaggerModule.createDocument(app, config);
 SwaggerModule.setup('api/docs', app, document);
+
+
 
 // Start listening on port
 await app.listen(process.env.PORT ?? 3000, '0.0.0.0');

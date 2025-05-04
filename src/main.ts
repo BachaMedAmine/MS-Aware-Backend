@@ -15,7 +15,7 @@ app.useGlobalPipes(new ValidationPipe());
 
 // Swagger configuration
 const config = new DocumentBuilder()
-.setTitle('BlackMirror API')
+.setTitle('MsAware API')
 .setDescription('API documentation for BlackMirror : A platform for monitoring and managing healthcare industry professionals and patients')
 .setVersion('1.0')
 .addBearerAuth()

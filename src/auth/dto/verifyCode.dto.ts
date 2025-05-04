@@ -1,12 +1,10 @@
-import { IsDate, IsEmail, IsNotEmpty, IsNumber, IsString, MinLength } from "class-validator";
+import { IsDate, IsEmail, IsNotEmpty, IsNumber, IsString, MinLength } from 'class-validator';
 
 export class VerifyCodeDto {
+  @IsEmail()
+  email: string;
 
-    @IsEmail()
-    email: string;
-
-    @IsNotEmpty()
-    @IsString()
-    resetCode: string;
-
+  @IsNotEmpty()
+  @IsString()
+  resetCode: string;
 }

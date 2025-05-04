@@ -12,11 +12,11 @@ export class NewsController {
   @Get('latest')
   async getLatestNews() {
     const news = await this.newsService.fetchGoogleNews();
-    const articles = news.map(article => article.title);
+    const articles = news.map((article) => article.title);
     const summarizedNews = await this.aiService.summarizeNews(articles);
     return news.map((article, index) => ({
       ...article,
-      summary: summarizedNews[index]?.summary || "No summary available",
+      summary: summarizedNews[index]?.summary || 'No summary available',
     }));
   }
 

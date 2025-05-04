@@ -1,11 +1,9 @@
-import { IsDate, IsEmail, IsNotEmpty, IsNumber, IsString, MinLength } from "class-validator";
+import { IsDate, IsEmail, IsNotEmpty, IsNumber, IsString, MinLength } from 'class-validator';
 
 export class ChangePasswordDto {
+  @IsString()
+  oldPassword: string;
 
-    @IsString()
-    oldPassword: string;
-
-    @IsString()
-    newPassword: string;
-
+  @IsString()
+  newPassword: string;
 }

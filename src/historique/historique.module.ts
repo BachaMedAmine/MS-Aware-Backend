@@ -28,4 +28,3 @@ import { NotificationModule } from 'src/notification/notification.module';
   providers: [HistoriqueService, FileUploadService, PainCheckService], // 🔹 Ajout du service ici
 })
 export class HistoriqueModule {}
-

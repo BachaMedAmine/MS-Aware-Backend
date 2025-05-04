@@ -10,7 +10,7 @@ export class NotificationScheduler {
 
   constructor(
     private readonly authService: AuthService,
-    private readonly notificationService: NotificationService,
+    private readonly notificationService: NotificationService
   ) {}
 
   @Cron('0 8 * * 1') // Every Monday at 8AM

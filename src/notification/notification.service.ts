@@ -5,38 +5,40 @@ import { Notification } from './schema/notification.entity';
 import { Model } from 'mongoose';
 import { User } from 'src/auth/schema/user.schema';
 
-
 @Injectable()
 export class NotificationService {
-
   constructor(
     @InjectModel(Notification.name)
     private notificationModel: Model<Notification>,
     @InjectModel(User.name)
     private userModel: Model<User>
-  ) { }
+  ) {}
 
-  async addNotification(addNotificationDto: AddNotificationDto, userId: string): Promise<{ notification }> {
+  async addNotification(
+    addNotificationDto: AddNotificationDto,
+    userId: string
+  ): Promise<{ notification }> {
     const { title, message } = addNotificationDto;
 
     const notification = await this.notificationModel.create({
       title,
       message,
-      user: userId
+      user: userId,
     });
 
-    return { notification }
-
+    return { notification };
   }
 
   async displayNotification(userId: string): Promise<{ notification: Notification[] }> {
-    const findNotifications = await this.notificationModel.find({ user: userId });
+    const findNotifications = await this.notificationModel.find({
+      user: userId,
+    });
 
     return { notification: findNotifications };
   }
 
   async deleteAllNotifs(userId: string) {
-    await this.notificationModel.deleteMany({user: userId})
-    return {message: "All notifications have been deleted !"};
+    await this.notificationModel.deleteMany({ user: userId });
+    return { message: 'All notifications have been deleted !' };
   }
 }

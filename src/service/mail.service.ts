@@ -20,7 +20,7 @@ export class MailService {
       from: 'MSAware benmabroukyassine399@gmail.com',
       to: to,
       subject: 'Password Reset Request',
-      html:`
+      html: `
         <!DOCTYPE html>
         <html lang="en">
           <head>

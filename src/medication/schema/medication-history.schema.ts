@@ -5,7 +5,11 @@ import { Medication } from './medication.schema';
 
 @Schema({ timestamps: true })
 export class MedicationHistory extends Document {
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Medication', required: true })
+  @Prop({
+    type: MongooseSchema.Types.ObjectId,
+    ref: 'Medication',
+    required: true,
+  })
   medicationId: Medication;
 
   @Prop({ required: true })

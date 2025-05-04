@@ -44,23 +44,22 @@ export class User extends Document {
   @Prop({ required: false })
   medicalReport: string;
 
-  @Prop({ required: false, unique: true, sparse: true }) // ✅ Use sparse instead of index
+  @Prop({ required: false, unique: true, sparse: true })
   googleId?: string;
 
+  @Prop({ required: false })
+  accessToken?: string;
 
   @Prop({ required: false })
-  accessToken?: string; // Google access token for Google-authenticated users
-
-  @Prop({ required: false })
-  refreshToken?: string; // Google refresh token for Google-authenticated users
-
+  refreshToken?: string;
 
   @Prop({ required: false })
   fcmToken?: string;
 
+  @Prop({ required: false, unique: true, sparse: true })
+  appleId?: string;
 }
 
 export type UserDocument = User & Document;
 
 export const UserSchema = SchemaFactory.createForClass(User);
-

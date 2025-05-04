@@ -13,15 +13,16 @@ import * as moment from 'moment';
 import { StockHistory } from './schema/stock-history.schema';
 import { UpdateStockDto } from './dto/update-stock.dto';
 
-
 @Injectable()
 export class MedicationsService {
   constructor(
     @InjectModel(Medication.name) private medicationModel: Model<Medication>,
-    @InjectModel(MedicationHistory.name) private medicationHistoryModel: Model<MedicationHistory>,
+    @InjectModel(MedicationHistory.name)
+    private medicationHistoryModel: Model<MedicationHistory>,
     @InjectModel(Reminder.name) private reminderModel: Model<Reminder>,
-    @InjectModel(StockHistory.name) private stockHistoryModel: Model<StockHistory>,
-  ) { }
+    @InjectModel(StockHistory.name)
+    private stockHistoryModel: Model<StockHistory>
+  ) {}
 
   async create(userId: any, createMedicationDto: CreateMedicationDto): Promise<Medication> {
     console.log('User ID reÃ§u:', userId);
@@ -66,7 +67,11 @@ export class MedicationsService {
     return medication;
   }
 
-  async update(id: string, userId: string, updateMedicationDto: UpdateMedicationDto): Promise<Medication> {
+  async update(
+    id: string,
+    userId: string,
+    updateMedicationDto: UpdateMedicationDto
+  ): Promise<Medication> {
     // Trouver d'abord le mÃ©dicament existant
     const existingMedication = await this.medicationModel.findOne({ _id: id, userId }).exec();
 
@@ -78,17 +83,17 @@ export class MedicationsService {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    await this.reminderModel.deleteMany({
-      medicationId: id,
-      scheduledDate: { $gte: today }
-    }).exec();
+    await this.reminderModel
+      .deleteMany({
+        medicationId: id,
+        scheduledDate: { $gte: today },
+      })
+      .exec();
 
     // Mettre Ã  jour le mÃ©dicament
-    const medication = await this.medicationModel.findOneAndUpdate(
-      { _id: id, userId },
-      updateMedicationDto,
-      { new: true },
-    ).exec();
+    const medication = await this.medicationModel
+      .findOneAndUpdate({ _id: id, userId }, updateMedicationDto, { new: true })
+      .exec();
 
     if (!medication) {
       throw new NotFoundException(`Medication not found after update`);
@@ -100,7 +105,6 @@ export class MedicationsService {
     return medication;
   }
 
-  
   async remove(id: string, userId: string): Promise<{ message: string }> {
     // VÃ©rifier si le mÃ©dicament existe et appartient Ã  l'utilisateur
     const medication = await this.medicationModel.findOne({ _id: id, userId }).exec();
@@ -113,18 +117,20 @@ export class MedicationsService {
     const remindersDeleted = await this.reminderModel.deleteMany({ medicationId: id }).exec();
 
     // 2. Supprimer l'historique de prise de mÃ©dicament
-    const medicationHistoryDeleted = await this.medicationHistoryModel.deleteMany({ medicationId: id }).exec();
+    const medicationHistoryDeleted = await this.medicationHistoryModel
+      .deleteMany({ medicationId: id })
+      .exec();
 
     // 3. Supprimer l'historique des stocks
-    const stockHistoryDeleted = await this.stockHistoryModel.deleteMany({ medicationId: id }).exec();
+    const stockHistoryDeleted = await this.stockHistoryModel
+      .deleteMany({ medicationId: id })
+      .exec();
 
     // 4. Supprimer (ou dÃ©sactiver) le mÃ©dicament lui-mÃªme
     // Option 1: DÃ©sactivation (soft delete)
-    const result = await this.medicationModel.findByIdAndUpdate(
-      id,
-      { isActive: false },
-      { new: true }
-    ).exec();
+    const result = await this.medicationModel
+      .findByIdAndUpdate(id, { isActive: false }, { new: true })
+      .exec();
 
     // Option 2: Suppression complÃ¨te - dÃ©commentez la ligne suivante pour supprimer complÃ¨tement
     // await this.medicationModel.findByIdAndDelete(id).exec();
@@ -135,11 +141,15 @@ export class MedicationsService {
     - ${stockHistoryDeleted.deletedCount} entrÃ©es d'historique de stock supprimÃ©es`);
 
     return {
-      message: `MÃ©dicament "${medication.name}" supprimÃ© avec succÃ¨s et toutes les donnÃ©es associÃ©es ont Ã©tÃ© nettoyÃ©es.`
+      message: `MÃ©dicament "${medication.name}" supprimÃ© avec succÃ¨s et toutes les donnÃ©es associÃ©es ont Ã©tÃ© nettoyÃ©es.`,
     };
   }
 
-  async takeMedication(id: string, userId: string, takeMedicationDto: TakeMedicationDto): Promise<MedicationHistory> {
+  async takeMedication(
+    id: string,
+    userId: string,
+    takeMedicationDto: TakeMedicationDto
+  ): Promise<MedicationHistory> {
     const medication = await this.findOne(id, userId);
 
     // Update stock
@@ -150,10 +160,7 @@ export class MedicationsService {
       const newStock = medication.currentStock - quantityTaken;
       const updatedStock = newStock >= 0 ? newStock : 0;
 
-      await this.medicationModel.updateOne(
-        { _id: id },
-        { currentStock: updatedStock }
-      ).exec();
+      await this.medicationModel.updateOne({ _id: id }, { currentStock: updatedStock }).exec();
 
       // Ajouter l'historique de stock
       await this.stockHistoryModel.create({
@@ -162,7 +169,7 @@ export class MedicationsService {
         newStock: updatedStock,
         changeAmount: -quantityTaken,
         type: 'take',
-        userId
+        userId,
       });
 
       // VÃ©rifier le stock faible aprÃ¨s la prise
@@ -177,16 +184,18 @@ export class MedicationsService {
     const takenTime = moment(takeMedicationDto.takenAt).format('HH:mm');
 
     // Find the closest reminder to the taken time
-    const todayReminders = await this.reminderModel.find({
-      medicationId: id,
-      userId,
-      scheduledDate: {
-        $gte: takenDate.clone().startOf('day').toDate(),
-        $lte: takenDate.clone().endOf('day').toDate()
-      },
-      isCompleted: false,
-      isSkipped: false
-    }).exec();
+    const todayReminders = await this.reminderModel
+      .find({
+        medicationId: id,
+        userId,
+        scheduledDate: {
+          $gte: takenDate.clone().startOf('day').toDate(),
+          $lte: takenDate.clone().endOf('day').toDate(),
+        },
+        isCompleted: false,
+        isSkipped: false,
+      })
+      .exec();
 
     if (todayReminders.length > 0) {
       // Find closest reminder by time
@@ -206,10 +215,12 @@ export class MedicationsService {
       }
 
       // Mark reminder as completed
-      await this.reminderModel.updateOne(
-        { _id: closestReminder._id },
-        { isCompleted: true, completedAt: takenDate.toDate() }
-      ).exec();
+      await this.reminderModel
+        .updateOne(
+          { _id: closestReminder._id },
+          { isCompleted: true, completedAt: takenDate.toDate() }
+        )
+        .exec();
     }
 
     // Create medication history entry
@@ -218,25 +229,32 @@ export class MedicationsService {
       takenAt: takeMedicationDto.takenAt,
       quantityTaken,
       notes: takeMedicationDto.notes || '',
-      scheduledTime: todayReminders.length > 0 ? todayReminders[0].scheduledTime : takenTime
+      scheduledTime: todayReminders.length > 0 ? todayReminders[0].scheduledTime : takenTime,
     });
 
     return medicationHistory.save();
   }
 
-  async skipMedication(id: string, userId: string, scheduledDate: Date, scheduledTime: string): Promise<Reminder> {
+  async skipMedication(
+    id: string,
+    userId: string,
+    scheduledDate: Date,
+    scheduledTime: string
+  ): Promise<Reminder> {
     const reminderDate = moment(scheduledDate).startOf('day');
-    const reminder = await this.reminderModel.findOne({
-      medicationId: id,
-      userId,
-      scheduledDate: {
-        $gte: reminderDate.clone().startOf('day').toDate(),
-        $lte: reminderDate.clone().endOf('day').toDate()
-      },
-      scheduledTime,
-      isCompleted: false,
-      isSkipped: false
-    }).exec();
+    const reminder = await this.reminderModel
+      .findOne({
+        medicationId: id,
+        userId,
+        scheduledDate: {
+          $gte: reminderDate.clone().startOf('day').toDate(),
+          $lte: reminderDate.clone().endOf('day').toDate(),
+        },
+        scheduledTime,
+        isCompleted: false,
+        isSkipped: false,
+      })
+      .exec();
 
     if (!reminder) {
       throw new NotFoundException('Reminder not found');
@@ -250,7 +268,7 @@ export class MedicationsService {
       medicationId: id,
       takenAt: new Date(),
       skipped: true,
-      scheduledTime
+      scheduledTime,
     });
     await medicationHistory.save();
 
@@ -258,88 +276,87 @@ export class MedicationsService {
   }
 
   async getTodayReminders(userId: string, lang: 'fr' | 'en' = 'fr'): Promise<any[]> {
-  const today = moment().startOf('day');
-  const reminders = await this.reminderModel
-    .find({
-      userId,
-      scheduledDate: {
-        $gte: today.clone().toDate(),
-        $lte: today.clone().endOf('day').toDate(),
+    const today = moment().startOf('day');
+    const reminders = await this.reminderModel
+      .find({
+        userId,
+        scheduledDate: {
+          $gte: today.clone().toDate(),
+          $lte: today.clone().endOf('day').toDate(),
+        },
+        isCompleted: false,
+        isSkipped: false,
+      })
+      .populate('medicationId')
+      .sort({ scheduledTime: 1 })
+      .lean()
+      .exec();
+
+    return reminders.map((reminder) => ({
+      ...reminder,
+      message: this.translateField(reminder.message, lang),
+      medication: {
+        ...reminder.medicationId,
+        name: this.translateField(reminder.medicationId?.name, lang),
+        description: this.translateField(reminder.medicationId?.description, lang),
       },
-      isCompleted: false,
-      isSkipped: false,
-    })
-    .populate('medicationId')
-    .sort({ scheduledTime: 1 })
-    .lean()
-    .exec();
-
-  return reminders.map((reminder) => ({
-    ...reminder,
-    message: this.translateField(reminder.message, lang),
-    medication: {
-      ...reminder.medicationId,
-      name: this.translateField(reminder.medicationId?.name, lang),
-      description: this.translateField(reminder.medicationId?.description, lang),
-    },
-  }));
-}
-
-
-async getRemindersForDate(userId: string, date: Date, lang: 'fr' | 'en' = 'fr'): Promise<any[]> {
-  const start = moment(date).startOf('day').toDate();
-  const end = moment(date).endOf('day').toDate();
-
-  const reminders = await this.reminderModel
-    .find({
-      userId,
-      scheduledDate: { $gte: start, $lte: end },
-      isCompleted: false,
-      isSkipped: false,
-    })
-    .populate('medicationId')
-    .sort({ scheduledTime: 1 })
-    .lean()
-    .exec();
-
-  return reminders.map((reminder) => ({
-    ...reminder,
-    message: this.translateField(reminder.message, lang),
-    medication: {
-      ...reminder.medicationId,
-      name: this.translateField(reminder.medicationId?.name, lang),
-      description: this.translateField(reminder.medicationId?.description, lang),
-    },
-  }));
-}
-
-async getMedicationHistory(
-  id: string,
-  userId: string,
-  startDate?: Date,
-  endDate?: Date,
-  lang: 'fr' | 'en' = 'fr'
-): Promise<any[]> {
-  await this.findOne(id, userId);
-
-  const query: any = { medicationId: id };
-  if (startDate || endDate) {
-    query.takenAt = {};
-    if (startDate) query.takenAt.$gte = startDate;
-    if (endDate) query.takenAt.$lte = endDate;
+    }));
   }
 
-  const history = await this.medicationHistoryModel
-    .find(query)
-    .sort({ takenAt: -1 })
-    .lean()
-    .exec();
+  async getRemindersForDate(userId: string, date: Date, lang: 'fr' | 'en' = 'fr'): Promise<any[]> {
+    const start = moment(date).startOf('day').toDate();
+    const end = moment(date).endOf('day').toDate();
 
-  return history.map((h) => ({
-    ...h,
-    notes: this.translateField(h.notes, lang),
-  }));
-}
+    const reminders = await this.reminderModel
+      .find({
+        userId,
+        scheduledDate: { $gte: start, $lte: end },
+        isCompleted: false,
+        isSkipped: false,
+      })
+      .populate('medicationId')
+      .sort({ scheduledTime: 1 })
+      .lean()
+      .exec();
+
+    return reminders.map((reminder) => ({
+      ...reminder,
+      message: this.translateField(reminder.message, lang),
+      medication: {
+        ...reminder.medicationId,
+        name: this.translateField(reminder.medicationId?.name, lang),
+        description: this.translateField(reminder.medicationId?.description, lang),
+      },
+    }));
+  }
+
+  async getMedicationHistory(
+    id: string,
+    userId: string,
+    startDate?: Date,
+    endDate?: Date,
+    lang: 'fr' | 'en' = 'fr'
+  ): Promise<any[]> {
+    await this.findOne(id, userId);
+
+    const query: any = { medicationId: id };
+    if (startDate || endDate) {
+      query.takenAt = {};
+      if (startDate) query.takenAt.$gte = startDate;
+      if (endDate) query.takenAt.$lte = endDate;
+    }
+
+    const history = await this.medicationHistoryModel
+      .find(query)
+      .sort({ takenAt: -1 })
+      .lean()
+      .exec();
+
+    return history.map((h) => ({
+      ...h,
+      notes: this.translateField(h.notes, lang),
+    }));
+  }
 
   private async generateReminders(medication: Medication): Promise<void> {
     const { _id, userId, frequencyType, specificDays, timeOfDay, startDate, endDate } = medication;
@@ -362,7 +379,7 @@ async getMedicationHistory(
 
     const reminders: Reminder[] = [];
 
-    let currentDate = moment(start);
+    const currentDate = moment(start);
 
     while (currentDate.isSameOrBefore(end)) {
       const dayOfWeek = currentDate.day(); // 0 = Sunday, 1 = Monday, etc.
@@ -409,11 +426,13 @@ async getMedicationHistory(
   // MÃ©thode pour scanner tous les mÃ©dicaments avec un stock faible
   async scanLowStockMedications(): Promise<void> {
     // Find medications with low stock
-    const lowStockMedications = await this.medicationModel.find({
-      isActive: true,
-      notifyLowStock: true,
-      currentStock: { $gt: 0, $lte: { $ref: 'lowStockThreshold' } }
-    }).exec();
+    const lowStockMedications = await this.medicationModel
+      .find({
+        isActive: true,
+        notifyLowStock: true,
+        currentStock: { $gt: 0, $lte: { $ref: 'lowStockThreshold' } },
+      })
+      .exec();
 
     // Ici, vous pouvez implÃ©menter la logique de notification
     console.log('Medications that need refills:', lowStockMedications);
@@ -425,7 +444,11 @@ async getMedicationHistory(
   }
 
   // Nouvelles mÃ©thodes pour la gestion du stock
-  async updateStock(id: string, userId: string, updateStockDto: UpdateStockDto): Promise<Medication> {
+  async updateStock(
+    id: string,
+    userId: string,
+    updateStockDto: UpdateStockDto
+  ): Promise<Medication> {
     const medication = await this.findOne(id, userId);
     if (!medication) {
       throw new NotFoundException(`Medication with ID ${id} not found`);
@@ -440,11 +463,9 @@ async getMedicationHistory(
       updateData.lowStockThreshold = updateStockDto.lowStockThreshold;
     }
 
-    const updatedMedication = await this.medicationModel.findByIdAndUpdate(
-      id,
-      updateData,
-      { new: true }
-    ).exec();
+    const updatedMedication = await this.medicationModel
+      .findByIdAndUpdate(id, updateData, { new: true })
+      .exec();
 
     if (!updatedMedication) {
       throw new NotFoundException(`Failed to update medication stock`);
@@ -458,7 +479,7 @@ async getMedicationHistory(
       changeAmount,
       notes: updateStockDto.notes,
       type: changeAmount > 0 ? 'add' : 'adjustment',
-      userId
+      userId,
     });
 
     // VÃ©rifier le stock faible
@@ -467,7 +488,12 @@ async getMedicationHistory(
     return updatedMedication;
   }
 
-  async addStock(id: string, userId: string, quantity: number, notes?: string): Promise<Medication> {
+  async addStock(
+    id: string,
+    userId: string,
+    quantity: number,
+    notes?: string
+  ): Promise<Medication> {
     const medication = await this.findOne(id, userId);
     if (!medication) {
       throw new NotFoundException(`Medication with ID ${id} not found`);
@@ -476,11 +502,9 @@ async getMedicationHistory(
     const previousStock = medication.currentStock;
     const newStock = previousStock + quantity;
 
-    const updatedMedication = await this.medicationModel.findByIdAndUpdate(
-      id,
-      { currentStock: newStock },
-      { new: true }
-    ).exec();
+    const updatedMedication = await this.medicationModel
+      .findByIdAndUpdate(id, { currentStock: newStock }, { new: true })
+      .exec();
 
     if (!updatedMedication) {
       throw new NotFoundException(`Failed to add medication stock`);
@@ -494,7 +518,7 @@ async getMedicationHistory(
       changeAmount: quantity,
       notes,
       type: 'add',
-      userId
+      userId,
     });
 
     return updatedMedication;
@@ -502,9 +526,7 @@ async getMedicationHistory(
 
   async getStockHistory(id: string, userId: string): Promise<StockHistory[]> {
     await this.findOne(id, userId); // VÃ©rifier l'accÃ¨s
-    return this.stockHistoryModel.find({ medicationId: id })
-      .sort({ createdAt: -1 })
-      .exec();
+    return this.stockHistoryModel.find({ medicationId: id }).sort({ createdAt: -1 }).exec();
   }
 
   // MÃ©thode unique pour vÃ©rifier le stock faible d'un mÃ©dicament spÃ©cifique
@@ -517,7 +539,9 @@ async getMedicationHistory(
 
     if (isLowStock) {
       // Ici, vous pouvez implÃ©menter la logique de notification
-      console.log(`Low stock alert for medication ${medication.name}: ${medication.currentStock} units remaining`);
+      console.log(
+        `Low stock alert for medication ${medication.name}: ${medication.currentStock} units remaining`
+      );
 
       // Vous pourriez appeler un service de notification ici
       // await this.notificationService.sendLowStockAlert({
@@ -530,12 +554,14 @@ async getMedicationHistory(
   }
 
   // Nouvelle mÃ©thode pour corriger les dates des reminders existants
-  async fixExistingReminders(): Promise<{ message: string, count: number }> {
+  async fixExistingReminders(): Promise<{ message: string; count: number }> {
     // RÃ©cupÃ©rer tous les reminders non complÃ©tÃ©s et non ignorÃ©s
-    const reminders = await this.reminderModel.find({
-      isCompleted: false,
-      isSkipped: false
-    }).exec();
+    const reminders = await this.reminderModel
+      .find({
+        isCompleted: false,
+        isSkipped: false,
+      })
+      .exec();
 
     let updatedCount = 0;
 
@@ -554,12 +580,14 @@ async getMedicationHistory(
 
     return {
       message: `Fixed ${updatedCount} reminders with incorrect date format.`,
-      count: updatedCount
+      count: updatedCount,
     };
   }
 
   // MÃ©thode de test pour crÃ©er un mÃ©dicament avec un reminder proche
-  async createTestMedicationWithReminder(userId: string): Promise<{ medication: Medication, nextReminder: Date }> {
+  async createTestMedicationWithReminder(
+    userId: string
+  ): Promise<{ medication: Medication; nextReminder: Date }> {
     // Heure actuelle + 2 minutes
     const now = new Date();
     const minutes = now.getMinutes();
@@ -579,7 +607,7 @@ async getMedicationHistory(
       dosageQuantity: 1,
       dosageUnit: 'mg',
       currentStock: 10,
-      userId: userId
+      userId: userId,
     });
 
     const savedMedication = await testMedication.save();
@@ -591,20 +619,24 @@ async getMedicationHistory(
     const nextReminderDate = new Date();
     nextReminderDate.setHours(nextReminderHour, nextReminderMinutes, 0, 0);
 
-    console.log(`MÃ©dicament test crÃ©Ã© avec succÃ¨s. Prochain rappel prÃ©vu Ã  ${nextReminderDate.toLocaleTimeString()}`);
+    console.log(
+      `MÃ©dicament test crÃ©Ã© avec succÃ¨s. Prochain rappel prÃ©vu Ã  ${nextReminderDate.toLocaleTimeString()}`
+    );
 
     // Mettre en place une vÃ©rification automatique
     this.setupAutomaticReminderCheck(savedMedication._id as string, nextReminderDate);
 
     return {
       medication: savedMedication,
-      nextReminder: nextReminderDate
+      nextReminder: nextReminderDate,
     };
   }
 
   // Configuration de la vÃ©rification automatique des rappels
   private setupAutomaticReminderCheck(medicationId: string, reminderTime: Date): void {
-    console.log(`Configuration de la vÃ©rification automatique pour le rappel Ã  ${reminderTime.toLocaleTimeString()}`);
+    console.log(
+      `Configuration de la vÃ©rification automatique pour le rappel Ã  ${reminderTime.toLocaleTimeString()}`
+    );
 
     // Calculer le dÃ©lai jusqu'au reminder en millisecondes
     const now = new Date();
@@ -620,7 +652,9 @@ async getMedicationHistory(
     // Configurer un timeout pour vÃ©rifier le rappel Ã  l'heure prÃ©vue
     setTimeout(async () => {
       try {
-        console.log(`\n=== VÃ‰RIFICATION AUTOMATIQUE DU RAPPEL (${new Date().toLocaleTimeString()}) ===`);
+        console.log(
+          `\n=== VÃ‰RIFICATION AUTOMATIQUE DU RAPPEL (${new Date().toLocaleTimeString()}) ===`
+        );
 
         // RÃ©cupÃ©rer le mÃ©dicament
         const medication = await this.medicationModel.findById(medicationId).exec();
@@ -631,15 +665,17 @@ async getMedicationHistory(
 
         // RÃ©cupÃ©rer le reminder actif
         const today = moment().startOf('day');
-        const reminders = await this.reminderModel.find({
-          medicationId,
-          scheduledDate: {
-            $gte: today.clone().startOf('day').toDate(),
-            $lte: today.clone().endOf('day').toDate()
-          },
-          isCompleted: false,
-          isSkipped: false
-        }).exec();
+        const reminders = await this.reminderModel
+          .find({
+            medicationId,
+            scheduledDate: {
+              $gte: today.clone().startOf('day').toDate(),
+              $lte: today.clone().endOf('day').toDate(),
+            },
+            isCompleted: false,
+            isSkipped: false,
+          })
+          .exec();
 
         if (reminders.length === 0) {
           console.log('Aucun rappel actif trouvÃ© pour ce mÃ©dicament.');
@@ -655,8 +691,8 @@ async getMedicationHistory(
         let smallestDiff = Infinity;
 
         for (const reminder of reminders) {
-          const [hour, minute] = reminder.scheduledTime.split(':').map(num => parseInt(num));
-          const timeDiff = Math.abs((hour * 60 + minute) - (currentHour * 60 + currentMinute));
+          const [hour, minute] = reminder.scheduledTime.split(':').map((num) => parseInt(num));
+          const timeDiff = Math.abs(hour * 60 + minute - (currentHour * 60 + currentMinute));
 
           if (timeDiff < smallestDiff) {
             smallestDiff = timeDiff;
@@ -685,7 +721,6 @@ async getMedicationHistory(
 
           console.log(`=== FIN DE LA VÃ‰RIFICATION AUTOMATIQUE ===\n`);
         }, 60000);
-
       } catch (error) {
         console.error('Erreur lors de la vÃ©rification automatique du rappel:', error);
       }
@@ -702,24 +737,29 @@ async getMedicationHistory(
     console.log(`VÃ©rification des rappels actifs Ã  ${currentTimeString}`);
 
     const today = moment().startOf('day');
-    const reminders = await this.reminderModel.find({
-      scheduledDate: {
-        $gte: today.clone().startOf('day').toDate(),
-        $lte: today.clone().endOf('day').toDate()
-      },
-      isCompleted: false,
-      isSkipped: false
-    }).populate('medicationId').exec();
+    const reminders = await this.reminderModel
+      .find({
+        scheduledDate: {
+          $gte: today.clone().startOf('day').toDate(),
+          $lte: today.clone().endOf('day').toDate(),
+        },
+        isCompleted: false,
+        isSkipped: false,
+      })
+      .populate('medicationId')
+      .exec();
 
     console.log(`${reminders.length} rappels trouvÃ©s pour aujourd'hui`);
 
     for (const reminder of reminders) {
       console.log(`- Rappel pour "${reminder.medicationId['name']}" Ã  ${reminder.scheduledTime}`);
-      const [hour, minute] = reminder.scheduledTime.split(':').map(num => parseInt(num));
+      const [hour, minute] = reminder.scheduledTime.split(':').map((num) => parseInt(num));
 
       // VÃ©rifier si c'est l'heure du rappel (Ã  1 minute prÃ¨s)
       if (currentHour === hour && Math.abs(currentMinute - minute) <= 1) {
-        console.log(`!!! NOTIFICATION: C'est l'heure de prendre ${reminder.medicationId['name']} !!!`);
+        console.log(
+          `!!! NOTIFICATION: C'est l'heure de prendre ${reminder.medicationId['name']} !!!`
+        );
       }
     }
   }
@@ -731,17 +771,21 @@ async getMedicationHistory(
       const tomorrow = moment().add(1, 'day').startOf('day');
 
       // RÃ©cupÃ©rer les rappels crÃ©Ã©s pour aujourd'hui
-      const todayReminders = await this.reminderModel.find({
-        medicationId: medication._id,
-        scheduledDate: {
-          $gte: today.toDate(),
-          $lt: tomorrow.toDate()
-        },
-        isCompleted: false,
-        isSkipped: false
-      }).exec();
+      const todayReminders = await this.reminderModel
+        .find({
+          medicationId: medication._id,
+          scheduledDate: {
+            $gte: today.toDate(),
+            $lt: tomorrow.toDate(),
+          },
+          isCompleted: false,
+          isSkipped: false,
+        })
+        .exec();
 
-      console.log(`VÃ©rification des rappels pour le mÃ©dicament ${medication.name} (${todayReminders.length} rappels aujourd'hui)`);
+      console.log(
+        `VÃ©rification des rappels pour le mÃ©dicament ${medication.name} (${todayReminders.length} rappels aujourd'hui)`
+      );
 
       if (todayReminders.length === 0) {
         console.log(`Aucun rappel prÃ©vu aujourd'hui pour ${medication.name}`);
@@ -751,7 +795,9 @@ async getMedicationHistory(
       // Pour chaque rappel d'aujourd'hui, configurer une vÃ©rification automatique
       for (const reminder of todayReminders) {
         const now = new Date();
-        const [reminderHour, reminderMinute] = reminder.scheduledTime.split(':').map(num => parseInt(num));
+        const [reminderHour, reminderMinute] = reminder.scheduledTime
+          .split(':')
+          .map((num) => parseInt(num));
 
         // CrÃ©er une date pour l'heure du rappel aujourd'hui
         const reminderTime = new Date();
@@ -761,17 +807,23 @@ async getMedicationHistory(
         const delay = reminderTime.getTime() - now.getTime();
 
         if (delay <= 0) {
-          console.log(`Le rappel pour ${medication.name} Ã  ${reminder.scheduledTime} est dÃ©jÃ  passÃ© pour aujourd'hui`);
+          console.log(
+            `Le rappel pour ${medication.name} Ã  ${reminder.scheduledTime} est dÃ©jÃ  passÃ© pour aujourd'hui`
+          );
           continue;
         }
 
-        console.log(`Rappel pour ${medication.name} configurÃ© Ã  ${reminder.scheduledTime} (dans ${Math.round(delay / 60000)} minutes)`);
+        console.log(
+          `Rappel pour ${medication.name} configurÃ© Ã  ${reminder.scheduledTime} (dans ${Math.round(delay / 60000)} minutes)`
+        );
 
         // Configurer un timeout pour ce rappel
         setTimeout(async () => {
           try {
             console.log(`\n=== NOTIFICATION DE RAPPEL (${new Date().toLocaleTimeString()}) ===`);
-            console.log(`!!! C'est l'heure de prendre ${medication.name} (${reminder.scheduledTime}) !!!`);
+            console.log(
+              `!!! C'est l'heure de prendre ${medication.name} (${reminder.scheduledTime}) !!!`
+            );
 
             // VÃ©rification une minute plus tard
             setTimeout(async () => {
@@ -791,7 +843,6 @@ async getMedicationHistory(
 
               console.log(`=== FIN DE LA NOTIFICATION DE RAPPEL ===\n`);
             }, 60000);
-
           } catch (error) {
             console.error('Erreur lors de la notification de rappel:', error);
           }

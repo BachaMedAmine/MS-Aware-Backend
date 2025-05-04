@@ -1,4 +1,10 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { SignUpDto } from './dto/signUp.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { User } from './schema/user.schema';
@@ -17,6 +23,7 @@ import { OAuth2Client } from 'google-auth-library';
 import { Cron } from '@nestjs/schedule';
 import * as admin from 'firebase-admin';
 import { NotificationService } from 'src/notification/notification.service';
+import * as appleSigninAuth from 'apple-signin-auth';
 
 @Injectable()
 export class AuthService {
@@ -28,17 +35,27 @@ export class AuthService {
     @InjectModel(ResetCode.name)
     private ResetCodeModel: Model<ResetCode>,
     private mailService: MailService,
-    private configService: ConfigService, 
-    private readonly notificationService: NotificationService,
+    private configService: ConfigService,
+    private readonly notificationService: NotificationService
   ) {
-    this.googleClient = new OAuth2Client(
-      this.configService.get<string>('GOOGLE_CLIENT_ID'),
-    );
-
+    this.googleClient = new OAuth2Client(this.configService.get<string>('GOOGLE_CLIENT_ID'));
   }
 
   async signUp(signUpDto: SignUpDto): Promise<{ user }> {
-    const { fullName, email, birthday, password, gender, phone, profileCompleted, careGiverEmail, diagnosis, type, medicalReport, fcmToken } = signUpDto;
+    const {
+      fullName,
+      email,
+      birthday,
+      password,
+      gender,
+      phone,
+      profileCompleted,
+      careGiverEmail,
+      diagnosis,
+      type,
+      medicalReport,
+      fcmToken,
+    } = signUpDto;
 
     const existingUser = await this.userModel.findOne({ email });
     if (existingUser) {
@@ -52,7 +69,7 @@ export class AuthService {
     const initializedPhone = phone ?? 10000000;
     const initializedCareGiverEmail = careGiverEmail ?? '';
     const initializedDiagnosis = diagnosis ?? '';
-    const initializedFcmToken = fcmToken ?? "";
+    const initializedFcmToken = fcmToken ?? '';
 
     const user = await this.userModel.create({
       fullName,
@@ -66,24 +83,27 @@ export class AuthService {
       diagnosis: initializedDiagnosis,
       type: initializedType,
       medicalReport,
-      fcmToken: initializedFcmToken
+      fcmToken: initializedFcmToken,
     });
 
     return { user };
   }
 
-  async login(email: string, password: string): Promise<{ accessToken: string; refreshToken: string }> {
+  async login(
+    email: string,
+    password: string
+  ): Promise<{ accessToken: string; refreshToken: string }> {
     const user = await this.userModel.findOne({ email }).exec();
     if (!user || !(await bcrypt.compare(password, user.password))) {
-        throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Invalid credentials');
     }
 
     const payload = {
-        userId: user.id.toString(),
-        fullName: user.fullName,
-        email: user.email,
-        gender: user.gender,
-        birthday: user.birthday,
+      userId: user.id.toString(),
+      fullName: user.fullName,
+      email: user.email,
+      gender: user.gender,
+      birthday: user.birthday,
     };
 
     // Use consistent expiration time (1d as configured in module)
@@ -93,37 +113,39 @@ export class AuthService {
     await user.save();
 
     return { accessToken, refreshToken };
-}
-async refreshToken(refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> {
-  const user = await this.userModel.findOne({ refreshToken }).exec();
-  if (!user) {
-      throw new UnauthorizedException('Invalid refresh token');
   }
 
-  const payload = {
+  async refreshToken(refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> {
+    const user = await this.userModel.findOne({ refreshToken }).exec();
+    if (!user) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    const payload = {
       userId: user.id.toString(),
       fullName: user.fullName,
       email: user.email,
       gender: user.gender,
       birthday: user.birthday,
-  };
+    };
 
-  const newAccessToken = this.jwtService.sign(payload); // Will use the 1d expiration
-  const newRefreshToken = randomBytes(32).toString('hex');
-  
-  user.refreshToken = newRefreshToken;
-  await user.save();
+    const newAccessToken = this.jwtService.sign(payload); // Will use the 1d expiration
+    const newRefreshToken = randomBytes(32).toString('hex');
 
-  return { 
+    user.refreshToken = newRefreshToken;
+    await user.save();
+
+    return {
       accessToken: newAccessToken,
-      refreshToken: newRefreshToken
-  };
-}
+      refreshToken: newRefreshToken,
+    };
+  }
   async validateGoogleUser(googleUser: any): Promise<any> {
     const { email, fullName, gender, birthday, googleId, accessToken, refreshToken } = googleUser;
-  
-    let user = await this.userModel.findOne({ email }) || await this.userModel.findOne({ googleId });
-  
+
+    const user =
+      (await this.userModel.findOne({ email })) || (await this.userModel.findOne({ googleId }));
+
     if (user) {
       if (!user.googleId) {
         user.googleId = googleId;
@@ -133,11 +155,11 @@ async refreshToken(refreshToken: string): Promise<{ accessToken: string; refresh
       }
       return user;
     }
-  
+
     // Generate a random password for the Google user
     const randomPassword = randomBytes(16).toString('hex'); // 32-character hex string
     const hashedPassword = await bcrypt.hash(randomPassword, 10);
-  
+
     const newUser = await this.userModel.create({
       fullName,
       email,
@@ -154,9 +176,7 @@ async refreshToken(refreshToken: string): Promise<{ accessToken: string; refresh
       type: false,
       medicalReport: '',
     });
-  
-    
-  
+
     return newUser;
   }
 
@@ -167,18 +187,18 @@ async refreshToken(refreshToken: string): Promise<{ accessToken: string; refresh
         '815846323450-svco4e1a2u5gutrp1ifhdqf2s7v2fk5s.apps.googleusercontent.com',
         '815846323450-55fto74973fqkcfsaq9ajhfgkqkr8402.apps.googleusercontent.com',
       ].filter(Boolean) as string[];
- 
+
       const ticket = await this.googleClient.verifyIdToken({
         idToken: token,
         audience: audienceList,
       });
- 
+
       const payload = ticket.getPayload();
- 
+
       if (!payload) {
         throw new UnauthorizedException('Invalid Google token payload');
       }
- 
+
       const { email, name, sub: googleId } = payload;
       const user = {
         email,
@@ -188,15 +208,15 @@ async refreshToken(refreshToken: string): Promise<{ accessToken: string; refresh
         birthday: new Date('2000-02-20'),
         accessToken: token,
       };
- 
+
       return this.validateGoogleUser(user);
     } catch (error) {
       console.error('Google token validation error:', error);
       throw new UnauthorizedException('Google token validation failed');
     }
   }
- 
-  async googleLogin(user: any): Promise<{ payload, token: string }> {
+
+  async googleLogin(user: any): Promise<{ payload; token: string }> {
     const payload = {
       userId: user._id.toString(),
       fullName: user.fullName,
@@ -206,7 +226,7 @@ async refreshToken(refreshToken: string): Promise<{ accessToken: string; refresh
       phone: user.phone,
       careGiverEmail: user.careGiverEmail,
       diagnosis: user.diagnosis,
-      medicalReport: user.medicalReport
+      medicalReport: user.medicalReport,
     };
 
     const token = this.jwtService.sign(payload, { expiresIn: '5m' });
@@ -216,7 +236,7 @@ async refreshToken(refreshToken: string): Promise<{ accessToken: string; refresh
 
   async forgotPassword(email: string) {
     const user = await this.userModel.findOne({ email });
-    if (!user) throw new UnauthorizedException("Invalid Email.");
+    if (!user) throw new UnauthorizedException('Invalid Email.');
 
     const resetCode = Math.floor(100000 + Math.random() * 900000);
     const expiryDate = new Date();
@@ -230,7 +250,7 @@ async refreshToken(refreshToken: string): Promise<{ accessToken: string; refresh
 
     await this.mailService.sendPasswordResetEmail(email, resetCode);
 
-    return { message: "Reset code sent to your email.", state: "success" };
+    return { message: 'Reset code sent to your email.', state: 'success' };
   }
 
   async getResetCodeByEmail(email: string): Promise<ResetCode> {
@@ -239,7 +259,7 @@ async refreshToken(refreshToken: string): Promise<{ accessToken: string; refresh
 
     const resetCode = await this.ResetCodeModel.findOne({
       userId: user._id,
-      expiryDate: { $gt: new Date() }
+      expiryDate: { $gt: new Date() },
     });
 
     if (!resetCode) throw new NotFoundException('Code not found or expired');
@@ -253,7 +273,7 @@ async refreshToken(refreshToken: string): Promise<{ accessToken: string; refresh
     const codeRecord = await this.ResetCodeModel.findOne({
       userId: user._id,
       codeNumber: resetCode,
-      expiryDate: { $gt: new Date() }
+      expiryDate: { $gt: new Date() },
     });
 
     return !!codeRecord;
@@ -294,30 +314,30 @@ async refreshToken(refreshToken: string): Promise<{ accessToken: string; refresh
       newDiagnosis,
       newMedicalReport,
     } = editProfileDto;
-  
+
     const findUser = await this.userModel.findById(id);
-  
+
     if (!findUser) {
       throw new NotFoundException('User not found');
     }
-  
+
     if (newName && newName === findUser.fullName) {
       throw new BadRequestException('That is already your Full Name');
     }
-  
+
     if (newEmail && newEmail !== findUser.email) {
       const existingUser = await this.userModel.findOne({ email: newEmail });
       if (existingUser) {
         throw new BadRequestException('Email already exists');
       }
     }
-  
+
     const updateData: any = {};
-  
+
     if (newName) updateData.fullName = newName;
     if (newEmail) updateData.email = newEmail;
     if (newBirthday) updateData.birthday = newBirthday;
-    if (newGender) updateData.gender = newGender; 
+    if (newGender) updateData.gender = newGender;
     if (newPhone) updateData.phone = newPhone;
     if (newCareGiverEmail) updateData.careGiverEmail = newCareGiverEmail;
     if (newCareGiverPhone) updateData.careGiverPhone = newCareGiverPhone;
@@ -325,18 +345,16 @@ async refreshToken(refreshToken: string): Promise<{ accessToken: string; refresh
     if (newDiagnosis) updateData.diagnosis = newDiagnosis;
     if (newType) updateData.type = newType;
     if (newMedicalReport) updateData.medicalReport = newMedicalReport;
-  
-    const updatedUser = await this.userModel.findOneAndUpdate(
-      { _id: id },
-      { $set: updateData },
-      { new: true }
-    ).lean(); // lean() => renvoie un objet JS simple, pas un document Mongoose
-  
+
+    const updatedUser = await this.userModel
+      .findOneAndUpdate({ _id: id }, { $set: updateData }, { new: true })
+      .lean(); // lean() => renvoie un objet JS simple, pas un document Mongoose
+
     if (updatedUser) {
       delete updatedUser.password;
       delete updatedUser.refreshToken;
     }
-  
+
     return { user: updatedUser };
   }
 
@@ -349,7 +367,7 @@ async refreshToken(refreshToken: string): Promise<{ accessToken: string; refresh
     }
 
     //Compare passwords
-    const passwordMatch = await bcrypt.compare(oldPassword, findUser.password)
+    const passwordMatch = await bcrypt.compare(oldPassword, findUser.password);
     if (!passwordMatch) {
       throw new NotFoundException('Check your current password');
     }
@@ -358,10 +376,9 @@ async refreshToken(refreshToken: string): Promise<{ accessToken: string; refresh
     const newHashedPassword = await bcrypt.hash(newPassword, 10);
     findUser.password = newHashedPassword;
 
-    await findUser.save()
-    const userAfterPasswordUpdate = await this.userModel.findById(id)
+    await findUser.save();
+    const userAfterPasswordUpdate = await this.userModel.findById(id);
     return { user: userAfterPasswordUpdate };
-
   }
 
   async deleteProfile(id: string): Promise<{ message: string }> {
@@ -369,55 +386,96 @@ async refreshToken(refreshToken: string): Promise<{ accessToken: string; refresh
     if (!findUser) {
       throw new NotFoundException('User not found');
     }
-    await findUser.deleteOne()
-    return { message: "Profile has been deleted !" };
+    await findUser.deleteOne();
+    return { message: 'Profile has been deleted !' };
   }
   async getAllUsersWithFcmToken(): Promise<User[]> {
     return this.userModel.find({ fcmToken: { $exists: true, $ne: null } }).lean();
   }
-  
-  //Notification Quiz
-//@Cron('0 0 * * 1') Every monday at midnight 00:00
-@Cron('0 * * * * *')// Every minute
-async sendWeeklyQuizReminder() {
-  const users = await this.userModel.find({ fcmToken: { $exists: true, $ne: "" } }).lean();
 
-  for (const user of users) {
-    if (user.fcmToken) {
-      await this.sendNotification(user.fcmToken);
-      await this.notificationService.addNotification({ title: "🔓 Quiz Open", message: `Weekly Quiz is open. Don't forget to pass it !`}, user._id.toString());
+  //Notification Quiz
+  //@Cron('0 0 * * 1') Every monday at midnight 00:00
+  @Cron('0 * * * * *') // Every minute
+  async sendWeeklyQuizReminder() {
+    const users = await this.userModel.find({ fcmToken: { $exists: true, $ne: '' } }).lean();
+
+    for (const user of users) {
+      if (user.fcmToken) {
+        await this.sendNotification(user.fcmToken);
+        await this.notificationService.addNotification(
+          {
+            title: '🔓 Quiz Open',
+            message: `Weekly Quiz is open. Don't forget to pass it !`,
+          },
+          user._id.toString()
+        );
+      }
     }
   }
-}
 
-async sendNotification(fcmToken: string) {
-  const message = {
-    notification: {
-      title: "🔓 Quiz Open",
-      body: `Weekly Quiz is open. Don't forget to pass it !`,
-    },
-    android: {
+  async sendNotification(fcmToken: string) {
+    const message = {
       notification: {
-        icon: 'ms_logo',
+        title: '🔓 Quiz Open',
+        body: `Weekly Quiz is open. Don't forget to pass it !`,
+      },
+      android: {
+        notification: {
+          icon: 'ms_logo',
+        },
+      },
+      token: fcmToken,
+    };
+    try {
+      await admin.messaging().send(message);
+    } catch (error) {
+      console.error('Error sending notification:', error);
+    }
+  }
+
+  async updateFcmToken(fullName: string, fcmToken: string): Promise<{ message: string }> {
+    const user = await this.userModel.findOne({ fullName });
+    if (!user) {
+      throw new NotFoundException('User not found!');
+    }
+    await this.userModel.updateOne({ fullName }, { $set: { fcmToken } });
+    return { message: 'FCM Token updated successfully!' };
+  }
+
+
+  async validateAppleToken(identityToken: string): Promise<any> {
+    try {
+      const applePayload = await appleSigninAuth.verifyIdToken(identityToken, {
+        audience: this.configService.get<string>('APPLE_CLIENT_ID'), 
+        ignoreExpiration: false
+      });
+  
+      const { email, sub } = applePayload;
+      let user = await this.userModel.findOne({ email }) || await this.userModel.findOne({ appleId: sub });
+  
+      if (!user) {
+        user = await this.userModel.create({
+          email,
+          appleId: sub,
+          fullName: '', // Only available on first login
+          password: await bcrypt.hash(randomBytes(16).toString('hex'), 10)
+        });
       }
-    },
-    token: fcmToken
-  };
-  try {
-    await admin.messaging().send(message);
-  } catch (error) {
-    console.error("Error sending notification:", error);
+  
+      return user;
+    } catch (err) {
+      console.error('Apple token verification failed', err);
+      throw new UnauthorizedException('Invalid Apple token');
+    }
   }
-}
-
-async updateFcmToken(fullName: string, fcmToken: string): Promise<{ message: string }> {
-  const user = await this.userModel.findOne({ fullName });
-  if (!user) {
-    throw new NotFoundException("User not found!");
+  
+  async appleLogin(user: any): Promise<{ payload, token: string }> {
+    const payload = {
+      userId: user._id.toString(),
+      fullName: user.fullName,
+      email: user.email
+    };
+    const token = this.jwtService.sign(payload, { expiresIn: '1d' });
+    return { payload, token };
   }
-  await this.userModel.updateOne({ fullName }, { $set: { fcmToken } });
-  return { message: "FCM Token updated successfully!" };
-}
-
-
 }

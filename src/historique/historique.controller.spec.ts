@@ -1,6 +1,15 @@
 // historique.controller.ts
 import { HistoriqueService } from './historique.service';
-import { Controller, Post, UploadedFile, UseInterceptors, Request, Body, UseGuards, Get } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  UploadedFile,
+  UseInterceptors,
+  Request,
+  Body,
+  UseGuards,
+  Get,
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { FileUploadService } from '../auth/fileUpload.service';
@@ -17,8 +26,8 @@ export class HistoriqueController {
     @Body('userText') userText: string,
     @Request() req
   ) {
-    console.log("🔹 Headers received:", req.headers);
-    console.log("🔹 Authenticated user:", req.user);
+    console.log('🔹 Headers received:', req.headers);
+    console.log('🔹 Authenticated user:', req.user);
 
     if (!file) {
       throw new Error('No file uploaded');
@@ -30,7 +39,7 @@ export class HistoriqueController {
     }
 
     const fileUrl = `/uploads/images/${file.filename}`;
-    const description = userText || "No description provided";
+    const description = userText || 'No description provided';
 
     return this.historiqueService.saveHistory(userId, fileUrl, description);
   }

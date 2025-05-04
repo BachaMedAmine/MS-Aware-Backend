@@ -21,15 +21,16 @@ import { NotificationModule } from 'src/notification/notification.module';
     MongooseModule.forFeature([
       {
         name: 'Appointment',
-        schema: AppointmentSchema
+        schema: AppointmentSchema,
       },
       {
         name: User.name,
-        schema: UserSchema
+        schema: UserSchema,
       },
-    ]),NotificationModule
+    ]),
+    NotificationModule,
   ],
   controllers: [AppointmentController],
   providers: [AppointmentService],
 })
-export class AppointmentModule { }
+export class AppointmentModule {}

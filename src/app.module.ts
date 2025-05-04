@@ -16,44 +16,41 @@ import { MedicationModule } from './medication/medication.module';
 import { PythonRunnerService } from './ai_model/python-runner.service';
 import { NotificationModule } from './notification/notification.module';
 
-
 @Module({
-imports: [
-ConfigModule.forRoot({
-envFilePath: '.env',
-isGlobal: true,
-}),
-MongooseModule.forRootAsync({
-imports: [ConfigModule],
-inject: [ConfigService],
-useFactory: (configService: ConfigService) => {
-const host = configService.get<string>('DB_HOST');
-const port = configService.get<string>('DB_PORT');
-const dbName = configService.get<string>('DB_NAME');
-const user = configService.get<string>('DB_USER');
-const pass = configService.get<string>('DB_PASS');
+  imports: [
+    ConfigModule.forRoot({
+      envFilePath: '.env',
+      isGlobal: true,
+    }),
+    MongooseModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        const host = configService.get<string>('DB_HOST');
+        const port = configService.get<string>('DB_PORT');
+        const dbName = configService.get<string>('DB_NAME');
+        const user = configService.get<string>('DB_USER');
+        const pass = configService.get<string>('DB_PASS');
 
-const credentials = user && pass ? `${user}:${pass}@` : '';
+        const credentials = user && pass ? `${user}:${pass}@` : '';
 
-const uri = `mongodb://${credentials}${host}:${port}/${dbName}?authSource=admin`;
+        const uri = `mongodb://${credentials}${host}:${port}/${dbName}?authSource=admin`;
 
-
-return { uri };
-},
-}),
-AuthModule,
-NewsModule,
-ScheduleModule.forRoot(),
-AppointmentModule,
-ActivityModule,
-HistoriqueModule,
-QuestionnaireModule,
-NotificationsModule,
-MedicationModule,
-NotificationModule, // Add this line
-],
-controllers: [AppController],
-providers: [AppService,
-PythonRunnerService],
+        return { uri };
+      },
+    }),
+    AuthModule,
+    NewsModule,
+    ScheduleModule.forRoot(),
+    AppointmentModule,
+    ActivityModule,
+    HistoriqueModule,
+    QuestionnaireModule,
+    NotificationsModule,
+    MedicationModule,
+    NotificationModule, // Add this line
+  ],
+  controllers: [AppController],
+  providers: [AppService, PythonRunnerService],
 })
 export class AppModule {}

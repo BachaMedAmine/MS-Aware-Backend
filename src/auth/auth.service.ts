@@ -25,6 +25,7 @@ import * as admin from 'firebase-admin';
 import { NotificationService } from 'src/notification/notification.service';
 import * as appleSigninAuth from 'apple-signin-auth';
 import { MailService } from 'src/service/mail/mail.service';
+import { readFileSync } from 'fs';
 
 @Injectable()
 export class AuthService {
@@ -444,17 +445,18 @@ export class AuthService {
 
   async validateAppleToken(identityToken: string): Promise<any> {
     try {
-      const clientId = this.configService.get<string>('APPLE_CLIENT_ID', 'com.esprit.msaware.login'); // Default value
-      const teamId = this.configService.get<string>('APPLE_TEAM_ID', 'G96V29LG5G'); // Default value
-      const keyId = this.configService.get<string>('APPLE_KEY_ID', 'L5939HQWV5'); // Default value
-      const privateKey = this.configService.get<string>('APPLE_PRIVATE_KEY', ''); // Default value (ensure it's a valid key)
+      const clientId = this.configService.get<string>('APPLE_CLIENT_ID');
+      const teamId = this.configService.get<string>('APPLE_TEAM_ID');
+      const keyId = this.configService.get<string>('APPLE_KEY_ID');
+      const privateKeyEnv = this.configService.get<string>('APPLE_PRIVATE_KEY');
   
-      // Validate that required config values are present
+      // Reconstruct private key from ENV format (replace \n with real newlines if needed)
+      const privateKey = privateKeyEnv?.replace(/\\n/g, '\n');
+  
       if (!clientId || !teamId || !keyId || !privateKey) {
         throw new Error('Missing or invalid Apple configuration values');
       }
   
-      // Generate the client secret using getClientSecret with correct property names
       const clientSecret = appleSigninAuth.getClientSecret({
         clientID: clientId,
         teamID: teamId,
@@ -462,7 +464,6 @@ export class AuthService {
         privateKey,
       });
   
-      // Verify the Apple ID token
       const applePayload = await appleSigninAuth.verifyIdToken(identityToken, {
         audience: clientId,
         ignoreExpiration: false,

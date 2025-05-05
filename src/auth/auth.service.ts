@@ -450,7 +450,7 @@ export class AuthService {
       const keyId = this.configService.get<string>('APPLE_KEY_ID');
       const privateKeyEnv = this.configService.get<string>('APPLE_PRIVATE_KEY');
   
-      // Reconstruct private key from ENV format (replace \n with real newlines if needed)
+      
       const privateKey = privateKeyEnv?.replace(/\\n/g, '\n');
   
       if (!clientId || !teamId || !keyId || !privateKey) {
@@ -471,7 +471,11 @@ export class AuthService {
       });
   
       const { email, sub } = applePayload;
-      let user = (await this.userModel.findOne({ email })) || (await this.userModel.findOne({ appleId: sub }));
+      let user = await this.userModel.findOne({ email });
+  
+      if (!user) {
+        user = await this.userModel.findOne({ appleId: sub });
+      }
   
       if (!user) {
         user = await this.userModel.create({

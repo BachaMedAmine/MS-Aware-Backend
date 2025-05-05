@@ -186,11 +186,16 @@ export class AuthController {
     const { payload, token } = await this.authService.appleLogin(user);
     
     res.setHeader('Authorization', `Bearer ${token}`);
-    res.json({ token });
+    res.json({ token, refreshToken: user.refreshToken || '' });
   }
 
   @Put('updateFcmToken')
   async updateFcmToken(@Body() body: { fullName: string; fcmToken: string }) {
     return this.authService.updateFcmToken(body.fullName, body.fcmToken);
   }
+
+  @Get('test')
+testRoute() {
+  return { message: 'Server is running' };
+}
 }

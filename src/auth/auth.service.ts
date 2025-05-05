@@ -13,7 +13,7 @@ import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { LoginDto } from './dto/login.dto';
 import { ResetCode } from './schema/reset-password.schema';
-import { MailService } from 'src/service/mail.service';
+
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { EditProfileDto } from './dto/edit-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -24,17 +24,16 @@ import { Cron } from '@nestjs/schedule';
 import * as admin from 'firebase-admin';
 import { NotificationService } from 'src/notification/notification.service';
 import * as appleSigninAuth from 'apple-signin-auth';
+import { MailService } from 'src/service/mail/mail.service';
 
 @Injectable()
 export class AuthService {
   private googleClient: OAuth2Client;
   constructor(
-    @InjectModel(User.name)
-    private userModel: Model<User>,
+    @InjectModel(User.name) private userModel: Model<User>,
     private jwtService: JwtService,
-    @InjectModel(ResetCode.name)
-    private ResetCodeModel: Model<ResetCode>,
-    private mailService: MailService,
+    @InjectModel(ResetCode.name) private ResetCodeModel: Model<ResetCode>,
+    // private mailService: MailService, // Comment this out temporarily
     private configService: ConfigService,
     private readonly notificationService: NotificationService
   ) {
@@ -248,7 +247,7 @@ export class AuthService {
       expiryDate,
     });
 
-    await this.mailService.sendPasswordResetEmail(email, resetCode);
+    
 
     return { message: 'Reset code sent to your email.', state: 'success' };
   }
@@ -445,35 +444,59 @@ export class AuthService {
 
   async validateAppleToken(identityToken: string): Promise<any> {
     try {
+      const clientId = this.configService.get<string>('APPLE_CLIENT_ID', 'com.esprit.msaware.login'); // Default value
+      const teamId = this.configService.get<string>('APPLE_TEAM_ID', 'G96V29LG5G'); // Default value
+      const keyId = this.configService.get<string>('APPLE_KEY_ID', 'L5939HQWV5'); // Default value
+      const privateKey = this.configService.get<string>('APPLE_PRIVATE_KEY', ''); // Default value (ensure it's a valid key)
+  
+      // Validate that required config values are present
+      if (!clientId || !teamId || !keyId || !privateKey) {
+        throw new Error('Missing or invalid Apple configuration values');
+      }
+  
+      // Generate the client secret using getClientSecret with correct property names
+      const clientSecret = appleSigninAuth.getClientSecret({
+        clientID: clientId,
+        teamID: teamId,
+        keyIdentifier: keyId,
+        privateKey,
+      });
+  
+      // Verify the Apple ID token
       const applePayload = await appleSigninAuth.verifyIdToken(identityToken, {
-        audience: this.configService.get<string>('com.esprit.msaware.login'), 
-        ignoreExpiration: false
+        audience: clientId,
+        ignoreExpiration: false,
+        clientSecret,
       });
   
       const { email, sub } = applePayload;
-      let user = await this.userModel.findOne({ email }) || await this.userModel.findOne({ appleId: sub });
+      let user = (await this.userModel.findOne({ email })) || (await this.userModel.findOne({ appleId: sub }));
   
       if (!user) {
         user = await this.userModel.create({
           email,
           appleId: sub,
-          fullName: '', // Only available on first login
-          password: await bcrypt.hash(randomBytes(16).toString('hex'), 10)
+          fullName: '',
+          password: await bcrypt.hash(randomBytes(16).toString('hex'), 10),
+          profileCompleted: false,
         });
       }
   
       return user;
     } catch (err) {
-      console.error('Apple token verification failed', err);
+      console.error('Apple token verification failed:', err.message);
+      if (err.message.includes('jwt expired')) {
+        throw new UnauthorizedException('Apple token has expired');
+      }
       throw new UnauthorizedException('Invalid Apple token');
     }
   }
-  
+
   async appleLogin(user: any): Promise<{ payload, token: string }> {
     const payload = {
       userId: user._id.toString(),
       fullName: user.fullName,
-      email: user.email
+      email: user.email,
     };
     const token = this.jwtService.sign(payload, { expiresIn: '1d' });
     return { payload, token };

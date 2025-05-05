@@ -17,7 +17,8 @@ import { PythonRunnerService } from './ai_model/python-runner.service';
 import { NotificationModule } from './notification/notification.module';
 import { AuthController } from './auth/auth.controller';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
-
+import { AuthService } from './auth/auth.service';
+import { MailModule } from './service/mail/mail.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -53,6 +54,6 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard';
     NotificationModule, // Add this line
   ],
   controllers: [AppController,AuthController],
-  providers: [AppService, PythonRunnerService,JwtAuthGuard,],
+  providers: [AppService, PythonRunnerService,JwtAuthGuard,AuthService],
 })
 export class AppModule {}

@@ -177,15 +177,10 @@ export class AuthController {
     res.json({ token: jwtToken });
   }
 
-  @Post('apple/login')
-  async appleLogin(@Body() body: { identityToken: string }, @Res() res) {
-    console.log('Received Apple login request with token:', body.identityToken);
-    const { identityToken } = body;
-    if (!identityToken) throw new UnauthorizedException('Missing Apple token');
+  @Post('apple-login')
+  async appleLogin(@Body('identityToken') identityToken: string) {
     const user = await this.authService.validateAppleToken(identityToken);
-    const { payload, token } = await this.authService.appleLogin(user);
-    res.setHeader('Authorization', `Bearer ${token}`);
-    res.json({ token, refreshToken: user.refreshToken || '' });
+    return this.authService.appleLogin(user);
   }
 
   @Put('updateFcmToken')
@@ -193,7 +188,7 @@ export class AuthController {
     return this.authService.updateFcmToken(body.fullName, body.fcmToken);
   }
 
-  @Get('test')
+  @Post('test')
 testRoute() {
   return { message: 'Server is running' };
 }

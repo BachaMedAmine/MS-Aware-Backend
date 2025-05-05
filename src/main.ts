@@ -15,7 +15,7 @@ async function bootstrap() {
 
   // Swagger configuration
   const config = new DocumentBuilder()
-    .setTitle('MsAware 2.0 API')
+    .setTitle('MsAware 2.0')
     .setDescription(
       'API documentation for BlackMirror : A platform for monitoring and managing healthcare industry professionals and patients'
     )

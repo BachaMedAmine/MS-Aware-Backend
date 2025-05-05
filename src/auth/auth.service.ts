@@ -446,7 +446,7 @@ export class AuthService {
   async validateAppleToken(identityToken: string): Promise<any> {
     try {
       const applePayload = await appleSigninAuth.verifyIdToken(identityToken, {
-        audience: this.configService.get<string>('APPLE_CLIENT_ID'), 
+        audience: this.configService.get<string>('com.esprit.msaware.login'), 
         ignoreExpiration: false
       });
   

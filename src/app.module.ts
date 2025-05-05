@@ -16,6 +16,7 @@ import { MedicationModule } from './medication/medication.module';
 import { PythonRunnerService } from './ai_model/python-runner.service';
 import { NotificationModule } from './notification/notification.module';
 import { AuthController } from './auth/auth.controller';
+import { JwtAuthGuard } from './auth/jwt-auth.guard';
 
 @Module({
   imports: [
@@ -24,7 +25,7 @@ import { AuthController } from './auth/auth.controller';
       isGlobal: true,
     }),
     MongooseModule.forRootAsync({
-      imports: [ConfigModule],
+      imports: [ConfigModule,AuthModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
         const host = configService.get<string>('DB_HOST');
@@ -52,6 +53,6 @@ import { AuthController } from './auth/auth.controller';
     NotificationModule, // Add this line
   ],
   controllers: [AppController,AuthController],
-  providers: [AppService, PythonRunnerService],
+  providers: [AppService, PythonRunnerService,JwtAuthGuard,],
 })
 export class AppModule {}

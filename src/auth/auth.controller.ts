@@ -179,12 +179,11 @@ export class AuthController {
 
   @Post('apple/login')
   async appleLogin(@Body() body: { identityToken: string }, @Res() res) {
+    console.log('Received Apple login request with token:', body.identityToken);
     const { identityToken } = body;
     if (!identityToken) throw new UnauthorizedException('Missing Apple token');
-    
     const user = await this.authService.validateAppleToken(identityToken);
     const { payload, token } = await this.authService.appleLogin(user);
-    
     res.setHeader('Authorization', `Bearer ${token}`);
     res.json({ token, refreshToken: user.refreshToken || '' });
   }

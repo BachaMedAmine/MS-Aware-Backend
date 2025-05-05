@@ -445,24 +445,18 @@ export class AuthService {
 
   async validateAppleToken(identityToken: string): Promise<any> {
     try {
-      const clientId = this.configService.get<string>('APPLE_CLIENT_ID');
-      const teamId = this.configService.get<string>('APPLE_TEAM_ID');
-      const keyId = this.configService.get<string>('APPLE_KEY_ID');
-      const APPLE_PRIVATE_KEY = this.configService.get<string>('APPLE_PRIVATE_KEY');
+      const clientId = this.configService.get<string>('APPLE_CLIENT_ID') || process.env.APPLE_CLIENT_ID;
+      const teamId = this.configService.get<string>('APPLE_TEAM_ID') || process.env.APPLE_TEAM_ID;
+      const keyId = this.configService.get<string>('APPLE_KEY_ID') || process.env.APPLE_KEY_ID;
+      const APPLE_PRIVATE_KEY = this.configService.get<string>('APPLE_PRIVATE_KEY') || process.env.APPLE_PRIVATE_KEY;
   
-      const privateKey = APPLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
-  
-      // DEBUG LOGS
-      console.log('Apple Config Values:');
-      console.log('clientId:', clientId);
-      console.log('teamId:', teamId);
-      console.log('keyId:', keyId);
-      console.log('privateKey snippet:', privateKey?.slice(0, 30)); // don't log full key
-      console.log('identityToken (first 100 chars):', identityToken.slice(0, 100));
-  
-      if (!clientId || !teamId || !keyId || !privateKey) {
-        throw new Error('Missing or invalid Apple configuration values');
+      if (!clientId || !teamId || !keyId || !APPLE_PRIVATE_KEY) {
+        throw new Error(
+          `Missing Apple configuration values: clientId=${clientId}, teamId=${teamId}, keyId=${keyId}, privateKeyDefined=${!!APPLE_PRIVATE_KEY}`
+        );
       }
+  
+      const privateKey = APPLE_PRIVATE_KEY.replace(/\\n/g, '\n');
   
       const clientSecret = appleSigninAuth.getClientSecret({
         clientID: clientId,
@@ -471,7 +465,7 @@ export class AuthService {
         privateKey,
       });
   
-      console.log('clientSecret generated');
+      console.log('clientSecret generated:', clientSecret.slice(0, 30), '...');
   
       const applePayload = await appleSigninAuth.verifyIdToken(identityToken, {
         audience: clientId,
@@ -489,13 +483,23 @@ export class AuthService {
       }
   
       if (!user) {
+        // Derive fullName from email
+        const derivedFullName = email.includes('@') ? email.split('@')[0] : 'UnknownUser';
+        const formattedFullName = derivedFullName.charAt(0).toUpperCase() + derivedFullName.slice(1);
+  
+        if (!formattedFullName) {
+          throw new Error('Derived fullName cannot be empty');
+        }
+  
         user = await this.userModel.create({
           email,
           appleId: sub,
-          fullName: '',
+          fullName: formattedFullName, // Satisfies the required field
           password: await bcrypt.hash(randomBytes(16).toString('hex'), 10),
           profileCompleted: false,
+          // Defaults for other fields are handled by the schema
         });
+        console.log('New user created:', user);
       }
   
       return user;
@@ -504,10 +508,11 @@ export class AuthService {
       if (err.message.includes('jwt expired')) {
         throw new UnauthorizedException('Apple token has expired');
       }
-      throw new UnauthorizedException('Invalid Apple token');
+      throw new UnauthorizedException(`Apple login failed: ${err.message}`);
     }
   }
 
+  
   async appleLogin(user: any): Promise<{ payload, token: string }> {
     const payload = {
       userId: user._id.toString(),

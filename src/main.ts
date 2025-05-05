@@ -5,9 +5,13 @@ import { join } from 'path';
 import { ValidationPipe } from '@nestjs/common/pipes';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { PythonRunnerService } from './ai_model/python-runner.service';
+import { ConfigService } from '@nestjs/config';
+
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const configService = app.get(ConfigService);
+
 
   app.use('/uploads', express.static(join(__dirname, '..', 'uploads')));
   // Enable validation pipes

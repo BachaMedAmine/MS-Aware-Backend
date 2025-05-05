@@ -1,47 +1,45 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
-@Schema({
-  timestamps: true, // Automatically adds createdAt and updatedAt fields
-})
+@Schema({ timestamps: true })
 export class User extends Document {
-  @Prop({ required: true })
+  @Prop({ required: true, trim: true })
   fullName: string;
 
-  @Prop({ required: true, unique: true })
+  @Prop({ required: true, unique: true, trim: true })
   email: string;
 
   @Prop({ required: false })
-  password?: string; // Optional for Google users (no password needed)
+  password?: string;
 
-  @Prop({ required: false })
+  @Prop({ required: false, default: 'unknown' })
   gender: string;
 
-  @Prop({ required: false })
+  @Prop({ required: false, default: new Date('2000-01-01') })
   birthday: Date;
 
-  @Prop({ required: false })
+  @Prop({ required: false, default: 10000000 })
   phone: number;
 
   @Prop({ required: false, default: false })
   profileCompleted: boolean;
 
-  @Prop({ required: false })
+  @Prop({ required: false, default: '' })
   careGiverEmail: string;
 
-  @Prop({ required: false })
+  @Prop({ required: false, default: '' })
   careGiverName: string;
 
-  @Prop({ required: false })
+  @Prop({ required: false, default: 10000000 })
   careGiverPhone: number;
 
-  @Prop({ required: false })
+  @Prop({ required: false, default: '' })
   diagnosis: string;
 
-  @Prop({ required: false })
-  type: string;
+  @Prop({ required: false, default: false })
+  type: boolean;
 
-  @Prop({ required: false })
+  @Prop({ required: false, default: '' })
   medicalReport: string;
 
   @Prop({ required: false, unique: true, sparse: true })
@@ -61,5 +59,4 @@ export class User extends Document {
 }
 
 export type UserDocument = User & Document;
-
 export const UserSchema = SchemaFactory.createForClass(User);

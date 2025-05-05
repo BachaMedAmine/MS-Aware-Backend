@@ -14,8 +14,7 @@ constructor(
 private httpService: HttpService
 ) {}
 
-// 🔹 Générer une description avec OpenAI
-// 🔹 Générer une description avec OpenAI en français et en anglais
+
 async generateDescription(userText: string): Promise<{ fr: string; en: string }> {
 const apiKey = process.env.OPENAI_API_KEY;
 const apiUrl = 'https://api.openai.com/v1/chat/completions';

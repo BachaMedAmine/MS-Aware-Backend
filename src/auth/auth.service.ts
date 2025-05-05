@@ -448,10 +448,10 @@ export class AuthService {
       const clientId = this.configService.get<string>('APPLE_CLIENT_ID');
       const teamId = this.configService.get<string>('APPLE_TEAM_ID');
       const keyId = this.configService.get<string>('APPLE_KEY_ID');
-      const privateKeyEnv = this.configService.get<string>('APPLE_PRIVATE_KEY');
+      const APPLE_PRIVATE_KEY = this.configService.get<string>('APPLE_PRIVATE_KEY');
   
       
-      const privateKey = privateKeyEnv?.replace(/\\n/g, '\n');
+      const privateKey = APPLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
   
       if (!clientId || !teamId || !keyId || !privateKey) {
         throw new Error('Missing or invalid Apple configuration values');

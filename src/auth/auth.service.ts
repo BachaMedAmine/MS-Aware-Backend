@@ -450,8 +450,15 @@ export class AuthService {
       const keyId = this.configService.get<string>('APPLE_KEY_ID');
       const APPLE_PRIVATE_KEY = this.configService.get<string>('APPLE_PRIVATE_KEY');
   
-      
       const privateKey = APPLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+  
+      // DEBUG LOGS
+      console.log('Apple Config Values:');
+      console.log('clientId:', clientId);
+      console.log('teamId:', teamId);
+      console.log('keyId:', keyId);
+      console.log('privateKey snippet:', privateKey?.slice(0, 30)); // don't log full key
+      console.log('identityToken (first 100 chars):', identityToken.slice(0, 100));
   
       if (!clientId || !teamId || !keyId || !privateKey) {
         throw new Error('Missing or invalid Apple configuration values');
@@ -464,11 +471,15 @@ export class AuthService {
         privateKey,
       });
   
+      console.log('clientSecret generated');
+  
       const applePayload = await appleSigninAuth.verifyIdToken(identityToken, {
         audience: clientId,
         ignoreExpiration: false,
         clientSecret,
       });
+  
+      console.log('Apple token verified:', applePayload);
   
       const { email, sub } = applePayload;
       let user = await this.userModel.findOne({ email });

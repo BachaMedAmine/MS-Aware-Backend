@@ -42,7 +42,7 @@ def predict():
         }
         print("Sending response:", response)
 
-        return jsonify(response)
+        return jsonify({"status": "AI Server is running"}), 200
 
     except Exception as e:
         print(f"Error during prediction: {e}")

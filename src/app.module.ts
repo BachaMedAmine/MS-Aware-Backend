@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, OnModuleInit } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
@@ -19,6 +19,7 @@ import { AuthController } from './auth/auth.controller';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { AuthService } from './auth/auth.service';
 import { MailModule } from './service/mail/mail.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -26,7 +27,7 @@ import { MailModule } from './service/mail/mail.module';
       isGlobal: true,
     }),
     MongooseModule.forRootAsync({
-      imports: [ConfigModule,AuthModule],
+      imports: [ConfigModule, AuthModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
         const host = configService.get<string>('DB_HOST');
@@ -36,7 +37,6 @@ import { MailModule } from './service/mail/mail.module';
         const pass = configService.get<string>('DB_PASS');
 
         const credentials = user && pass ? `${user}:${pass}@` : '';
-
         const uri = `mongodb://${credentials}${host}:${port}/${dbName}?authSource=admin`;
 
         return { uri };
@@ -51,9 +51,18 @@ import { MailModule } from './service/mail/mail.module';
     QuestionnaireModule,
     NotificationsModule,
     MedicationModule,
-    NotificationModule, // Add this line
+    NotificationModule,
+    MailModule,
   ],
-  controllers: [AppController,AuthController],
-  providers: [AppService, PythonRunnerService,JwtAuthGuard,AuthService],
+  controllers: [AppController, AuthController],
+  providers: [AppService, PythonRunnerService, JwtAuthGuard, AuthService],
 })
-export class AppModule {}
+export class AppModule implements OnModuleInit {
+  constructor(private readonly pythonRunner: PythonRunnerService) {}
+
+  onModuleInit() {
+    this.pythonRunner.startAiModelServer();
+    this.pythonRunner.startClassifierServer();
+    this.pythonRunner.startRegressorServer();
+  }
+}

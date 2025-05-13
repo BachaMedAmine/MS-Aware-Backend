@@ -10,7 +10,7 @@ export class NotificationScheduler {
 
   constructor(
     private readonly authService: AuthService,
-    private readonly notificationService: NotificationService
+    private readonly notificationService: NotificationService,
   ) {}
 
   @Cron('0 8 * * 1') // Every Monday at 8AM
@@ -23,7 +23,7 @@ export class NotificationScheduler {
       try {
         await this.notificationService.sendPushNotification(
           user.fcmToken!,
-          '🧠 Weekly Cognitive Test Available!',
+          'Weekly Cognitive Test Available!',
           'It’s time to take your weekly MSNQ test.'
         );
       } catch (err) {

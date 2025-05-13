@@ -20,16 +20,16 @@ import { User, UserSchema } from 'src/auth/schema/user.schema';
     MongooseModule.forFeature([
       {
         name: 'Notification',
-        schema: NotificationSchema,
+        schema: NotificationSchema
       },
       {
         name: User.name,
-        schema: UserSchema,
+        schema: UserSchema
       },
-    ]),
+    ])
   ],
   controllers: [NotificationController],
   providers: [NotificationService],
   exports: [NotificationService],
 })
-export class NotificationModule {}
+export class NotificationModule { }

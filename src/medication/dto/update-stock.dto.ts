@@ -12,4 +12,4 @@ export class UpdateStockDto {
 
   @IsOptional()
   notes?: string;
-}
+} 

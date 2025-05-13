@@ -1,18 +1,21 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { SchemaTypes, Types } from 'mongoose';
+import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
+import { SchemaTypes, Types } from "mongoose";
 
 @Schema({
-  timestamps: true,
+    timestamps: true
 })
+
 export class Notification {
-  @Prop()
-  title: string;
 
-  @Prop()
-  message: string;
+    @Prop()
+    title: string
 
-  @Prop({ type: SchemaTypes.ObjectId, ref: 'User' })
-  user: Types.ObjectId;
+    @Prop()
+    message: string
+
+    @Prop({ type: SchemaTypes.ObjectId, ref: "User" })
+    user: Types.ObjectId;
+
 }
 
-export const NotificationSchema = SchemaFactory.createForClass(Notification);
+export const NotificationSchema = SchemaFactory.createForClass(Notification)

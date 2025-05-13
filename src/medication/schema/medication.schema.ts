@@ -30,17 +30,18 @@ export class Medication extends Document {
   @Prop({ required: true })
   name: string;
 
-  @Prop({
-    type: String,
-    enum: MedicationType,
-    default: MedicationType.PILL,
+
+  @Prop({ 
+    type: String, 
+    enum: MedicationType, 
+    default: MedicationType.PILL 
   })
   medicationType: MedicationType;
 
-  @Prop({
-    type: String,
-    enum: FrequencyType,
-    default: FrequencyType.DAILY,
+  @Prop({ 
+    type: String, 
+    enum: FrequencyType, 
+    default: FrequencyType.DAILY 
   })
   frequencyType: FrequencyType;
 
@@ -53,10 +54,10 @@ export class Medication extends Document {
   @Prop({ default: 'dose' })
   dosageUnit: string;
 
-  @Prop({
-    type: String,
-    enum: MealRelation,
-    default: MealRelation.NO_RELATION,
+  @Prop({ 
+    type: String, 
+    enum: MealRelation, 
+    default: MealRelation.NO_RELATION 
   })
   mealRelation: MealRelation;
 
@@ -79,16 +80,16 @@ export class Medication extends Document {
   color: string;
 
   @Prop({ type: Object })
-  description?: {
-    fr?: string;
-    en?: string;
-  };
+description?: {
+  fr?: string;
+  en?: string;
+};
 
-  @Prop({ type: Object })
-  notes?: {
-    fr?: string;
-    en?: string;
-  };
+@Prop({ type: Object })
+notes?: {
+  fr?: string;
+  en?: string;
+};
 
   @Prop({ type: Date })
   startDate: Date;

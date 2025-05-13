@@ -19,9 +19,9 @@ export class StockHistory {
 
   @Prop({ type: Object })
   notes?: {
-    fr?: string;
-    en?: string;
-  };
+  fr?: string;
+  en?: string;
+};
 
   @Prop({ required: true })
   type: 'add' | 'remove' | 'take' | 'adjustment';
@@ -30,4 +30,4 @@ export class StockHistory {
   userId: Types.ObjectId;
 }
 
-export const StockHistorySchema = SchemaFactory.createForClass(StockHistory);
+export const StockHistorySchema = SchemaFactory.createForClass(StockHistory); 

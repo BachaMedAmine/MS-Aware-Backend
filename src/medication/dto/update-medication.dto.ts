@@ -1,4 +1,4 @@
-// src/medications/dto/update-medication.dto.ts
+
 import { PartialType } from '@nestjs/mapped-types';
 import { CreateMedicationDto } from './create-medication.dto';
 

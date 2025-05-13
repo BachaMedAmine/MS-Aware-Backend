@@ -6,11 +6,7 @@ import { User } from 'src/auth/schema/user.schema';
 
 @Schema({ timestamps: true })
 export class Reminder extends Document {
-  @Prop({
-    type: MongooseSchema.Types.ObjectId,
-    ref: 'Medication',
-    required: true,
-  })
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Medication', required: true })
   medicationId: Medication;
 
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true })

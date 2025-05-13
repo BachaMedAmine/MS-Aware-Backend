@@ -13,7 +13,7 @@ import {
   UseInterceptors,
   UploadedFile,
   BadRequestException,
-  ParseIntPipe,
+  ParseIntPipe
 } from '@nestjs/common';
 import { MedicationsService } from './medication.service';
 import { CreateMedicationDto } from './dto/create-medication.dto';
@@ -35,7 +35,7 @@ export class MedicationsController {
   async create(
     @Request() req,
     @Body() createMedicationDto: CreateMedicationDto,
-    @UploadedFile() file?: Express.Multer.File
+    @UploadedFile() file?: Express.Multer.File,
   ) {
     if (typeof createMedicationDto.timeOfDay === 'string') {
       try {
@@ -68,7 +68,10 @@ export class MedicationsController {
   }
 
   @Get('reminders')
-  async getRemindersForDate(@Request() req, @Query('date') date?: string) {
+  async getRemindersForDate(
+    @Request() req,
+    @Query('date') date?: string,
+  ) {
     const userId = req.user.userId;
     const targetDate = date ? new Date(date) : new Date();
     return this.medicationsService.getRemindersForDate(userId, targetDate);
@@ -84,7 +87,7 @@ export class MedicationsController {
     @Param('id') id: string,
     @Request() req,
     @Query('startDate', ParseDatePipe) startDate?: Date,
-    @Query('endDate', ParseDatePipe) endDate?: Date
+    @Query('endDate', ParseDatePipe) endDate?: Date,
   ) {
     return this.medicationsService.getMedicationHistory(id, req.user.userId, startDate, endDate);
   }
@@ -95,7 +98,7 @@ export class MedicationsController {
     @Param('id') id: string,
     @Request() req,
     @Body() updateMedicationDto: UpdateMedicationDto,
-    @UploadedFile() file?: Express.Multer.File
+    @UploadedFile() file?: Express.Multer.File,
   ) {
     if (typeof updateMedicationDto.timeOfDay === 'string') {
       try {
@@ -126,7 +129,7 @@ export class MedicationsController {
   takeMedication(
     @Param('id') id: string,
     @Request() req,
-    @Body() takeMedicationDto: TakeMedicationDto
+    @Body() takeMedicationDto: TakeMedicationDto,
   ) {
     return this.medicationsService.takeMedication(id, req.user.userId, takeMedicationDto);
   }
@@ -136,18 +139,17 @@ export class MedicationsController {
     @Param('id') id: string,
     @Request() req,
     @Body('scheduledDate', ParseDatePipe) scheduledDate: Date,
-    @Body('scheduledTime') scheduledTime: string
+    @Body('scheduledTime') scheduledTime: string,
   ) {
-    return this.medicationsService.skipMedication(
-      id,
-      req.user.userId,
-      scheduledDate,
-      scheduledTime
-    );
+    return this.medicationsService.skipMedication(id, req.user.userId, scheduledDate, scheduledTime);
   }
 
   @Patch(':id/stock')
-  updateStock(@Param('id') id: string, @Request() req, @Body() updateStockDto: UpdateStockDto) {
+  updateStock(
+    @Param('id') id: string,
+    @Request() req,
+    @Body() updateStockDto: UpdateStockDto,
+  ) {
     return this.medicationsService.updateStock(id, req.user.userId, updateStockDto);
   }
 
@@ -156,7 +158,7 @@ export class MedicationsController {
     @Param('id') id: string,
     @Request() req,
     @Body('quantity', new ParseIntPipe()) quantity: number,
-    @Body('notes') notes?: string
+    @Body('notes') notes?: string,
   ) {
     return this.medicationsService.addStock(id, req.user.userId, quantity, notes);
   }

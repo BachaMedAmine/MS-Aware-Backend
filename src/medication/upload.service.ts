@@ -22,7 +22,7 @@ export class MedicationUploadService {
       callback(null, true);
     },
     limits: {
-      fileSize: 5 * 1024 * 1024, // 5MB
+      fileSize: 5 * 1024 * 1024, 
     },
   };
 }

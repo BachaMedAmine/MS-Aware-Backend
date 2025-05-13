@@ -18,7 +18,7 @@ import { MedicationUploadService } from './upload.service';
       { name: Medication.name, schema: MedicationSchema },
       { name: MedicationHistory.name, schema: MedicationHistorySchema },
       { name: Reminder.name, schema: ReminderSchema },
-      { name: StockHistory.name, schema: StockHistorySchema },
+      { name: StockHistory.name, schema: StockHistorySchema }
     ]),
     // Optionally include JwtModule if authentication is required for medication endpoints
     JwtModule.registerAsync({
@@ -34,4 +34,5 @@ import { MedicationUploadService } from './upload.service';
   providers: [MedicationsService, FileUploadService, MedicationUploadService], // Add FileUploadService and MedicationUploadService if handling photo uploads
   exports: [MedicationsService], // Optional: export the service if other modules need it
 })
+
 export class MedicationModule {}

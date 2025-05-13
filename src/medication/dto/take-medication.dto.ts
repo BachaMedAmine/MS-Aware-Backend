@@ -3,7 +3,7 @@ import { IsDate, IsOptional, IsNumber, Min, IsString } from 'class-validator';
 
 export class TakeMedicationDto {
   @IsDate()
-  @Type(() => Date) // ✅ this transforms ISO string to Date
+  @Type(() => Date) 
   takenAt: Date;
 
   @IsNumber()
@@ -14,6 +14,10 @@ export class TakeMedicationDto {
   @IsString()
   @IsOptional()
   notes?: string;
+
+  @IsOptional()
+  @IsString()
+  scheduledTime?: string;
 
   @IsString()
   @IsOptional()

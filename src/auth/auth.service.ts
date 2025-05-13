@@ -1,10 +1,4 @@
-import {
-  BadRequestException,
-  ConflictException,
-  Injectable,
-  NotFoundException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { SignUpDto } from './dto/signUp.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { User } from './schema/user.schema';
@@ -24,38 +18,30 @@ import { Cron } from '@nestjs/schedule';
 import * as admin from 'firebase-admin';
 import { NotificationService } from 'src/notification/notification.service';
 import * as appleSigninAuth from 'apple-signin-auth';
-import { MailService } from 'src/service/mail/mail.service';
-import { readFileSync } from 'fs';
+import { MailService } from 'src/service/mail.service';
+
 
 @Injectable()
 export class AuthService {
   private googleClient: OAuth2Client;
   constructor(
-    @InjectModel(User.name) private userModel: Model<User>,
+    @InjectModel(User.name)
+    private userModel: Model<User>,
     private jwtService: JwtService,
-    @InjectModel(ResetCode.name) private ResetCodeModel: Model<ResetCode>,
-    // private mailService: MailService, // Comment this out temporarily
-    private configService: ConfigService,
-    private readonly notificationService: NotificationService
+    @InjectModel(ResetCode.name)
+    private ResetCodeModel: Model<ResetCode>,
+    private mailService: MailService,
+    private configService: ConfigService, 
+    private readonly notificationService: NotificationService,
   ) {
-    this.googleClient = new OAuth2Client(this.configService.get<string>('GOOGLE_CLIENT_ID'));
+    this.googleClient = new OAuth2Client(
+      this.configService.get<string>('GOOGLE_CLIENT_ID'),
+    );
+
   }
 
   async signUp(signUpDto: SignUpDto): Promise<{ user }> {
-    const {
-      fullName,
-      email,
-      birthday,
-      password,
-      gender,
-      phone,
-      profileCompleted,
-      careGiverEmail,
-      diagnosis,
-      type,
-      medicalReport,
-      fcmToken,
-    } = signUpDto;
+    const { fullName, email, birthday, password, gender, phone, profileCompleted, careGiverEmail, diagnosis, type, medicalReport, fcmToken, verified } = signUpDto;
 
     const existingUser = await this.userModel.findOne({ email });
     if (existingUser) {
@@ -69,7 +55,8 @@ export class AuthService {
     const initializedPhone = phone ?? 10000000;
     const initializedCareGiverEmail = careGiverEmail ?? '';
     const initializedDiagnosis = diagnosis ?? '';
-    const initializedFcmToken = fcmToken ?? '';
+    const initializedFcmToken = fcmToken ?? "";
+    const initializedVerified = verified ?? false;
 
     const user = await this.userModel.create({
       fullName,
@@ -83,27 +70,25 @@ export class AuthService {
       diagnosis: initializedDiagnosis,
       type: initializedType,
       medicalReport,
-      fcmToken: initializedFcmToken,
+      fcmToken: "",
+      verified: initializedVerified
     });
 
     return { user };
   }
 
-  async login(
-    email: string,
-    password: string
-  ): Promise<{ accessToken: string; refreshToken: string }> {
+  async login(email: string, password: string): Promise<{ accessToken: string; refreshToken: string }> {
     const user = await this.userModel.findOne({ email }).exec();
     if (!user || !(await bcrypt.compare(password, user.password))) {
-      throw new UnauthorizedException('Invalid credentials');
+        throw new UnauthorizedException('Invalid credentials');
     }
 
     const payload = {
-      userId: user.id.toString(),
-      fullName: user.fullName,
-      email: user.email,
-      gender: user.gender,
-      birthday: user.birthday,
+        userId: user.id.toString(),
+        fullName: user.fullName,
+        email: user.email,
+        gender: user.gender,
+        birthday: user.birthday,
     };
 
     // Use consistent expiration time (1d as configured in module)
@@ -113,39 +98,37 @@ export class AuthService {
     await user.save();
 
     return { accessToken, refreshToken };
+}
+async refreshToken(refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> {
+  const user = await this.userModel.findOne({ refreshToken }).exec();
+  if (!user) {
+      throw new UnauthorizedException('Invalid refresh token');
   }
 
-  async refreshToken(refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> {
-    const user = await this.userModel.findOne({ refreshToken }).exec();
-    if (!user) {
-      throw new UnauthorizedException('Invalid refresh token');
-    }
-
-    const payload = {
+  const payload = {
       userId: user.id.toString(),
       fullName: user.fullName,
       email: user.email,
       gender: user.gender,
       birthday: user.birthday,
-    };
+  };
 
-    const newAccessToken = this.jwtService.sign(payload); // Will use the 1d expiration
-    const newRefreshToken = randomBytes(32).toString('hex');
+  const newAccessToken = this.jwtService.sign(payload); // Will use the 1d expiration
+  const newRefreshToken = randomBytes(32).toString('hex');
+  
+  user.refreshToken = newRefreshToken;
+  await user.save();
 
-    user.refreshToken = newRefreshToken;
-    await user.save();
-
-    return {
+  return { 
       accessToken: newAccessToken,
-      refreshToken: newRefreshToken,
-    };
-  }
+      refreshToken: newRefreshToken
+  };
+}
   async validateGoogleUser(googleUser: any): Promise<any> {
     const { email, fullName, gender, birthday, googleId, accessToken, refreshToken } = googleUser;
-
-    const user =
-      (await this.userModel.findOne({ email })) || (await this.userModel.findOne({ googleId }));
-
+  
+    let user = await this.userModel.findOne({ email }) || await this.userModel.findOne({ googleId });
+  
     if (user) {
       if (!user.googleId) {
         user.googleId = googleId;
@@ -155,11 +138,11 @@ export class AuthService {
       }
       return user;
     }
-
+  
     // Generate a random password for the Google user
     const randomPassword = randomBytes(16).toString('hex'); // 32-character hex string
     const hashedPassword = await bcrypt.hash(randomPassword, 10);
-
+  
     const newUser = await this.userModel.create({
       fullName,
       email,
@@ -176,7 +159,9 @@ export class AuthService {
       type: false,
       medicalReport: '',
     });
-
+  
+    
+  
     return newUser;
   }
 
@@ -187,18 +172,18 @@ export class AuthService {
         '815846323450-svco4e1a2u5gutrp1ifhdqf2s7v2fk5s.apps.googleusercontent.com',
         '815846323450-55fto74973fqkcfsaq9ajhfgkqkr8402.apps.googleusercontent.com',
       ].filter(Boolean) as string[];
-
+ 
       const ticket = await this.googleClient.verifyIdToken({
         idToken: token,
         audience: audienceList,
       });
-
+ 
       const payload = ticket.getPayload();
-
+ 
       if (!payload) {
         throw new UnauthorizedException('Invalid Google token payload');
       }
-
+ 
       const { email, name, sub: googleId } = payload;
       const user = {
         email,
@@ -208,15 +193,15 @@ export class AuthService {
         birthday: new Date('2000-02-20'),
         accessToken: token,
       };
-
+ 
       return this.validateGoogleUser(user);
     } catch (error) {
       console.error('Google token validation error:', error);
       throw new UnauthorizedException('Google token validation failed');
     }
   }
-
-  async googleLogin(user: any): Promise<{ payload; token: string }> {
+ 
+  async googleLogin(user: any): Promise<{ payload, token: string }> {
     const payload = {
       userId: user._id.toString(),
       fullName: user.fullName,
@@ -226,7 +211,7 @@ export class AuthService {
       phone: user.phone,
       careGiverEmail: user.careGiverEmail,
       diagnosis: user.diagnosis,
-      medicalReport: user.medicalReport,
+      medicalReport: user.medicalReport
     };
 
     const token = this.jwtService.sign(payload, { expiresIn: '5m' });
@@ -236,7 +221,7 @@ export class AuthService {
 
   async forgotPassword(email: string) {
     const user = await this.userModel.findOne({ email });
-    if (!user) throw new UnauthorizedException('Invalid Email.');
+    if (!user) throw new UnauthorizedException("Invalid Email.");
 
     const resetCode = Math.floor(100000 + Math.random() * 900000);
     const expiryDate = new Date();
@@ -248,9 +233,9 @@ export class AuthService {
       expiryDate,
     });
 
-    
+    await this.mailService.sendPasswordResetEmail(email, resetCode);
 
-    return { message: 'Reset code sent to your email.', state: 'success' };
+    return { message: "Reset code sent to your email.", state: "success" };
   }
 
   async getResetCodeByEmail(email: string): Promise<ResetCode> {
@@ -259,7 +244,7 @@ export class AuthService {
 
     const resetCode = await this.ResetCodeModel.findOne({
       userId: user._id,
-      expiryDate: { $gt: new Date() },
+      expiryDate: { $gt: new Date() }
     });
 
     if (!resetCode) throw new NotFoundException('Code not found or expired');
@@ -273,7 +258,7 @@ export class AuthService {
     const codeRecord = await this.ResetCodeModel.findOne({
       userId: user._id,
       codeNumber: resetCode,
-      expiryDate: { $gt: new Date() },
+      expiryDate: { $gt: new Date() }
     });
 
     return !!codeRecord;
@@ -314,26 +299,24 @@ export class AuthService {
       newDiagnosis,
       newMedicalReport,
     } = editProfileDto;
-
+  
     const findUser = await this.userModel.findById(id);
-
+  
     if (!findUser) {
       throw new NotFoundException('User not found');
     }
-
-    if (newName && newName === findUser.fullName) {
-      throw new BadRequestException('That is already your Full Name');
-    }
-
+  
+    // Check if email is being updated and already exists
     if (newEmail && newEmail !== findUser.email) {
       const existingUser = await this.userModel.findOne({ email: newEmail });
       if (existingUser) {
         throw new BadRequestException('Email already exists');
       }
     }
-
+  
+    // Build update data, including newName even if it's the same
     const updateData: any = {};
-
+  
     if (newName) updateData.fullName = newName;
     if (newEmail) updateData.email = newEmail;
     if (newBirthday) updateData.birthday = newBirthday;
@@ -345,19 +328,27 @@ export class AuthService {
     if (newDiagnosis) updateData.diagnosis = newDiagnosis;
     if (newType) updateData.type = newType;
     if (newMedicalReport) updateData.medicalReport = newMedicalReport;
-
+  
+    // Check if there are any fields to update
+    if (Object.keys(updateData).length === 0) {
+      throw new BadRequestException('No fields provided to update');
+    }
+  
     const updatedUser = await this.userModel
-      .findOneAndUpdate({ _id: id }, { $set: updateData }, { new: true })
-      .lean(); // lean() => renvoie un objet JS simple, pas un document Mongoose
-
+      .findOneAndUpdate(
+        { _id: id },
+        { $set: updateData },
+        { new: true }
+      )
+      .lean();
+  
     if (updatedUser) {
       delete updatedUser.password;
       delete updatedUser.refreshToken;
     }
-
+  
     return { user: updatedUser };
-  }
-
+  } 
   async updatePassword(id: string, changePasswordDto: ChangePasswordDto): Promise<{ user }> {
     const { oldPassword, newPassword } = changePasswordDto;
 
@@ -367,7 +358,7 @@ export class AuthService {
     }
 
     //Compare passwords
-    const passwordMatch = await bcrypt.compare(oldPassword, findUser.password);
+    const passwordMatch = await bcrypt.compare(oldPassword, findUser.password)
     if (!passwordMatch) {
       throw new NotFoundException('Check your current password');
     }
@@ -376,9 +367,10 @@ export class AuthService {
     const newHashedPassword = await bcrypt.hash(newPassword, 10);
     findUser.password = newHashedPassword;
 
-    await findUser.save();
-    const userAfterPasswordUpdate = await this.userModel.findById(id);
+    await findUser.save()
+    const userAfterPasswordUpdate = await this.userModel.findById(id)
     return { user: userAfterPasswordUpdate };
+
   }
 
   async deleteProfile(id: string): Promise<{ message: string }> {
@@ -386,29 +378,23 @@ export class AuthService {
     if (!findUser) {
       throw new NotFoundException('User not found');
     }
-    await findUser.deleteOne();
-    return { message: 'Profile has been deleted !' };
+    await findUser.deleteOne()
+    return { message: "Profile has been deleted !" };
   }
   async getAllUsersWithFcmToken(): Promise<User[]> {
     return this.userModel.find({ fcmToken: { $exists: true, $ne: null } }).lean();
   }
-
+  
   //Notification Quiz
-  //@Cron('0 0 * * 1') Every monday at midnight 00:00
-  @Cron('0 * * * * *') // Every minute
+//@Cron('0 0 * * 1') Every monday at midnight 00:00
+@Cron('0 * * * * *')// Every minute
   async sendWeeklyQuizReminder() {
-    const users = await this.userModel.find({ fcmToken: { $exists: true, $ne: '' } }).lean();
+    const users = await this.userModel.find({ fcmToken: { $exists: true, $ne: "" } }).lean();
 
     for (const user of users) {
       if (user.fcmToken) {
         await this.sendNotification(user.fcmToken);
-        await this.notificationService.addNotification(
-          {
-            title: '🔓 Quiz Open',
-            message: `Weekly Quiz is open. Don't forget to pass it !`,
-          },
-          user._id.toString()
-        );
+        await this.notificationService.addNotification({ title: "🔓 Quiz Open", message: `Weekly Quiz is open. Don't forget to pass it !` }, user._id.toString());
       }
     }
   }
@@ -416,110 +402,166 @@ export class AuthService {
   async sendNotification(fcmToken: string) {
     const message = {
       notification: {
-        title: '🔓 Quiz Open',
+        title: "🔓 Quiz Open",
         body: `Weekly Quiz is open. Don't forget to pass it !`,
+      },
+      data: {
+        screen: 'HealthTrack'
       },
       android: {
         notification: {
           icon: 'ms_logo',
-        },
+        }
       },
-      token: fcmToken,
+      token: fcmToken
     };
     try {
       await admin.messaging().send(message);
     } catch (error) {
-      console.error('Error sending notification:', error);
+      console.error("Error sending notification:", error);
     }
   }
 
   async updateFcmToken(fullName: string, fcmToken: string): Promise<{ message: string }> {
     const user = await this.userModel.findOne({ fullName });
     if (!user) {
-      throw new NotFoundException('User not found!');
+      throw new NotFoundException("User not found!");
     }
     await this.userModel.updateOne({ fullName }, { $set: { fcmToken } });
-    return { message: 'FCM Token updated successfully!' };
+    return { message: "FCM Token updated successfully!" };
   }
 
-
-  async validateAppleToken(identityToken: string): Promise<any> {
-    try {
-      const clientId = this.configService.get<string>('APPLE_CLIENT_ID') || process.env.APPLE_CLIENT_ID;
-      const teamId = this.configService.get<string>('APPLE_TEAM_ID') || process.env.APPLE_TEAM_ID;
-      const keyId = this.configService.get<string>('APPLE_KEY_ID') || process.env.APPLE_KEY_ID;
-      const APPLE_PRIVATE_KEY = this.configService.get<string>('APPLE_PRIVATE_KEY') || process.env.APPLE_PRIVATE_KEY;
-  
-      if (!clientId || !teamId || !keyId || !APPLE_PRIVATE_KEY) {
-        throw new Error(
-          `Missing Apple configuration values: clientId=${clientId}, teamId=${teamId}, keyId=${keyId}, privateKeyDefined=${!!APPLE_PRIVATE_KEY}`
-        );
-      }
-  
-      const privateKey = APPLE_PRIVATE_KEY.replace(/\\n/g, '\n');
-  
-      const clientSecret = appleSigninAuth.getClientSecret({
-        clientID: clientId,
-        teamID: teamId,
-        keyIdentifier: keyId,
-        privateKey,
-      });
-  
-      console.log('clientSecret generated:', clientSecret.slice(0, 30), '...');
-  
-      const applePayload = await appleSigninAuth.verifyIdToken(identityToken, {
-        audience: clientId,
-        ignoreExpiration: false,
-        clientSecret,
-      });
-  
-      console.log('Apple token verified:', applePayload);
-  
-      const { email, sub } = applePayload;
-      let user = await this.userModel.findOne({ email });
-  
-      if (!user) {
-        user = await this.userModel.findOne({ appleId: sub });
-      }
-  
-      if (!user) {
-        // Derive fullName from email
-        const derivedFullName = email.includes('@') ? email.split('@')[0] : 'UnknownUser';
-        const formattedFullName = derivedFullName.charAt(0).toUpperCase() + derivedFullName.slice(1);
-  
-        if (!formattedFullName) {
-          throw new Error('Derived fullName cannot be empty');
-        }
-  
-        user = await this.userModel.create({
-          email,
-          appleId: sub,
-          fullName: formattedFullName, // Satisfies the required field
-          password: await bcrypt.hash(randomBytes(16).toString('hex'), 10),
-          profileCompleted: false,
-          // Defaults for other fields are handled by the schema
-        });
-        console.log('New user created:', user);
-      }
-  
-      return user;
-    } catch (err) {
-      console.error('Apple token verification failed:', err.message);
-      if (err.message.includes('jwt expired')) {
-        throw new UnauthorizedException('Apple token has expired');
-      }
-      throw new UnauthorizedException(`Apple login failed: ${err.message}`);
+  async updateFcmTokenByEmail(email: string, fcmToken: string): Promise<{ message: string }> {
+    const user = await this.userModel.findOne({ email });
+    if (!user) {
+      throw new NotFoundException("User not found!");
     }
+    await this.userModel.updateOne({ email }, { $set: { fcmToken } });
+    return { message: "FCM Token updated successfully!" };
   }
 
+  //Email Verification
+  async verifyEmail(id: string) {
+    const user = await this.userModel.findById(id);
+    if (!user) throw new UnauthorizedException("Invalid Email.");
+
+    const resetCode = Math.floor(100000 + Math.random() * 900000);
+    const expiryDate = new Date();
+    expiryDate.setSeconds(expiryDate.getMinutes() + 100);
+
+    await this.ResetCodeModel.create({
+      codeNumber: resetCode,
+      userId: user._id,
+      expiryDate,
+    });
+
+    await this.mailService.sendEmailVerification(user.fullName, user.email, resetCode);
+
+    return { message: "Reset code sent to your email.", state: "success" };
+  }
+
+  async verifyEmailCode(email: string, resetCode: string): Promise<boolean> {
+    const user = await this.userModel.findOne({ email });
+    if (!user) throw new NotFoundException('User not found');
+
+    const codeRecord = await this.ResetCodeModel.findOne({
+      userId: user._id,
+      codeNumber: resetCode,
+      expiryDate: { $gt: new Date() }
+    });
+
+    user.verified = true;
+    await user.save();
+
+    return !!codeRecord;
+  }
+
+  async getUserIdByAuthId(authId: string): Promise<{ userId: string }> {
+    const auth = await this.userModel.findById(authId);
+    if (!auth) {
+      throw new NotFoundException('User not found');
+    }
+    return { userId: auth.id.toString() };
+  }
+
+  async getMyUserId(loggedInUserId: string): Promise<{ user }> {
+    const user = await this.userModel.findOne({ _id: loggedInUserId }).select('_id');
+    if (!user) {
+      throw new NotFoundException('user not found for the logged-in user');
+    }
+    return { user: user.id.toString() };
+  }
+
+async validateAppleToken(identityToken: string): Promise<any> {
+  try {
+  const clientId = this.configService.get<string>('APPLE_CLIENT_ID') || process.env.APPLE_CLIENT_ID;
+  const teamId = this.configService.get<string>('APPLE_TEAM_ID') || process.env.APPLE_TEAM_ID;
+  const keyId = this.configService.get<string>('APPLE_KEY_ID') || process.env.APPLE_KEY_ID;
+  const APPLE_PRIVATE_KEY = this.configService.get<string>('APPLE_PRIVATE_KEY') || process.env.APPLE_PRIVATE_KEY;
+  if (!clientId || !teamId || !keyId || !APPLE_PRIVATE_KEY) {
+  throw new Error(
+  `Missing Apple configuration values: clientId=${clientId}, teamId=${teamId}, keyId=${keyId}, privateKeyDefined=${!!APPLE_PRIVATE_KEY}`
+  );
+  }
+  const privateKey = APPLE_PRIVATE_KEY.replace(/\\n/g, '\n');
+  const clientSecret = appleSigninAuth.getClientSecret({
+  clientID: clientId,
+  teamID: teamId,
+  keyIdentifier: keyId,
+  privateKey,
+  });
+  console.log('clientSecret generated:', clientSecret.slice(0, 30), '...');
+  const applePayload = await appleSigninAuth.verifyIdToken(identityToken, {
+  audience: clientId,
+  ignoreExpiration: false,
+  clientSecret,
+  });
+  console.log('Apple token verified:', applePayload);
+  const { email, sub } = applePayload;
+  let user = await this.userModel.findOne({ email });
+  if (!user) {
+  user = await this.userModel.findOne({ appleId: sub });
+  }
+  if (!user) {
+  // Derive fullName from email
+  const derivedFullName = email.includes('@') ? email.split('@')[0] : 'UnknownUser';
+  const formattedFullName = derivedFullName.charAt(0).toUpperCase() + derivedFullName.slice(1);
+  if (!formattedFullName) {
+  throw new Error('Derived fullName cannot be empty');
+  }
+  user = await this.userModel.create({
+  email,
+  appleId: sub,
+  fullName: formattedFullName, // Satisfies the required field
+  password: await bcrypt.hash(randomBytes(16).toString('hex'), 10),
+  profileCompleted: false,
+  // Defaults for other fields are handled by the schema
+  });
+  console.log('New user created:', user);
+  }
+  return user;
+  } catch (err) {
+  console.error('Apple token verification failed:', err.message);
+  if (err.message.includes('jwt expired')) {
+  throw new UnauthorizedException('Apple token has expired');
+  }
+  throw new UnauthorizedException(`Apple login failed: ${err.message}`);
+  }
+  }
   
   async appleLogin(user: any): Promise<{ payload, token: string }> {
-    const payload = {
-      userId: user._id.toString(),
-      fullName: user.fullName,
-      email: user.email,
-    };
-    const token = this.jwtService.sign(payload, { expiresIn: '1d' });
-    return { payload, token };
+  const payload = {
+  userId: user._id.toString(),
+  fullName: user.fullName,
+  email: user.email,
+  };
+  const token = this.jwtService.sign(payload, { expiresIn: '1d' });
+  return { payload, token };
   }
-}
+
+
+  }
+  
+
+
+

@@ -1,62 +1,71 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
-@Schema({ timestamps: true })
+@Schema({
+  timestamps: true, // Automatically adds createdAt and updatedAt fields
+})
 export class User extends Document {
-  @Prop({ required: true, trim: true })
+  @Prop({ required: true })
   fullName: string;
 
-  @Prop({ required: true, unique: true, trim: true })
+  @Prop({ required: true, unique: true })
   email: string;
 
   @Prop({ required: false })
-  password?: string;
+  password?: string; // Optional for Google users (no password needed)
 
-  @Prop({ required: false, default: 'unknown' })
+  @Prop({ required: false })
   gender: string;
 
-  @Prop({ required: false, default: new Date('2000-01-01') })
+  @Prop({ required: false })
   birthday: Date;
 
-  @Prop({ required: false, default: 10000000 })
+  @Prop({ required: false })
   phone: number;
 
   @Prop({ required: false, default: false })
   profileCompleted: boolean;
 
-  @Prop({ required: false, default: '' })
+  @Prop({ required: false })
   careGiverEmail: string;
 
-  @Prop({ required: false, default: '' })
+  @Prop({ required: false })
   careGiverName: string;
 
-  @Prop({ required: false, default: 10000000 })
+  @Prop({ required: false })
   careGiverPhone: number;
 
-  @Prop({ required: false, default: '' })
+  @Prop({ required: false })
   diagnosis: string;
 
-  @Prop({ required: false, default: false })
-  type: boolean;
+  @Prop({ required: false })
+  type: string;
 
-  @Prop({ required: false, default: '' })
+  @Prop({ required: false })
   medicalReport: string;
 
-  @Prop({ required: false, unique: true, sparse: true })
+  @Prop({ required: false, unique: true, sparse: true }) // Use sparse instead of index
   googleId?: string;
 
-  @Prop({ required: false })
-  accessToken?: string;
 
   @Prop({ required: false })
-  refreshToken?: string;
+  accessToken?: string; // Google access token for Google-authenticated users
+
+  @Prop({ required: false })
+  refreshToken?: string; // Google refresh token for Google-authenticated users
+
 
   @Prop({ required: false })
   fcmToken?: string;
 
-  @Prop({ required: false, unique: true, sparse: true })
+  @Prop({required: false, unique: true, sparse: true})
   appleId?: string;
+
+  @Prop({ required: false })
+  verified: boolean;
+
 }
 
 export type UserDocument = User & Document;
+
 export const UserSchema = SchemaFactory.createForClass(User);

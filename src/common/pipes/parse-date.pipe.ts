@@ -12,7 +12,7 @@ export class ParseDatePipe implements PipeTransform {
     if (isNaN(date.getTime())) {
       throw new BadRequestException('Invalid date format');
     }
-
+    
     return date;
   }
 }

@@ -1,4 +1,12 @@
-import { IsEmail, IsOptional, IsString, IsDate, IsNumber, IsBoolean, IsIn } from 'class-validator';
+import {
+  IsEmail,
+  IsOptional,
+  IsString,
+  IsDate,
+  IsNumber,
+  IsBoolean,
+  IsIn,
+} from "class-validator";
 import { Type } from 'class-transformer';
 
 export class EditProfileDto {

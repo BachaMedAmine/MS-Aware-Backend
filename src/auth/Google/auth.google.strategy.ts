@@ -8,15 +8,13 @@ import { AuthService } from '../auth.service'; // Corrected import path
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   constructor(
     private configService: ConfigService,
-    private authService: AuthService
+    private authService: AuthService,
   ) {
     const clientID = configService.get<string>('GOOGLE_CLIENT_ID');
     const clientSecret = configService.get<string>('GOOGLE_CLIENT_SECRET');
 
     if (!clientID || !clientSecret) {
-      throw new Error(
-        'Google OAuth credentials (CLIENT_ID and CLIENT_SECRET) are not configured in .env'
-      );
+      throw new Error('Google OAuth credentials (CLIENT_ID and CLIENT_SECRET) are not configured in .env');
     }
 
     super({
@@ -33,7 +31,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     accessToken: string,
     refreshToken: string,
     profile: any,
-    done: VerifyCallback
+    done: VerifyCallback,
   ): Promise<any> {
     // You can add logic here to handle the prompt dynamically if needed
     const { name, emails } = profile;

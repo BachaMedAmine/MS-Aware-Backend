@@ -25,6 +25,6 @@ import { NotificationModule } from 'src/notification/notification.module';
     NotificationModule,
   ],
   controllers: [HistoriqueController],
-  providers: [HistoriqueService, FileUploadService, PainCheckService], // 🔹 Ajout du service ici
+  providers: [HistoriqueService, FileUploadService, PainCheckService], // ðŸ”¹ Ajout du service ici
 })
 export class HistoriqueModule {}

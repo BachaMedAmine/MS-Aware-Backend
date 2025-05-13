@@ -1,24 +1,17 @@
-import {
-  IsBoolean,
-  IsDate,
-  IsEmail,
-  IsNotEmpty,
-  IsNumber,
-  IsOptional,
-  IsString,
-  MinLength,
-} from 'class-validator';
+import { IsBoolean, IsDate, IsEmail, IsNotEmpty, IsNumber, IsOptional, IsString, MinLength } from "class-validator";
 
 export class EditAppointmentDto {
-  @IsOptional()
-  @IsString()
-  newFullName: string;
 
-  @IsOptional()
-  @IsDate()
-  newDate: Date;
+    @IsOptional()
+    @IsString()
+    newFullName: string;
 
-  @IsOptional()
-  @IsString()
-  newPhone: string;
+    @IsOptional()
+    @IsDate()
+    newDate: Date
+
+    @IsOptional()
+    @IsString()
+    newPhone: string
+
 }

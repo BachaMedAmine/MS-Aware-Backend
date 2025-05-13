@@ -1,28 +1,31 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { SchemaTypes, Types } from 'mongoose';
-import { User } from 'src/auth/schema/user.schema';
+import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
+import { SchemaTypes, Types } from "mongoose";
+import { User } from "src/auth/schema/user.schema";
 
 @Schema({
-  timestamps: true,
+    timestamps: true
 })
+
 export class Appointment {
-  @Prop()
-  fullName: string;
 
-  @Prop()
-  date: Date;
+    @Prop()
+    fullName: string
 
-  @Prop()
-  phone: string;
+    @Prop()
+    date: Date
 
-  @Prop({ type: String, enum: ['Upcoming', 'Completed', 'Canceled'] })
-  status: string;
+    @Prop()
+    phone: string
 
-  @Prop()
-  fcmToken: string;
+    @Prop({ type: String, enum: ["Upcoming", "Completed", "Canceled"] })
+    status: string
 
-  @Prop({ type: SchemaTypes.ObjectId, ref: 'User' })
-  user: Types.ObjectId;
+    @Prop()
+    fcmToken: string
+
+    @Prop({ type: SchemaTypes.ObjectId, ref: "User" })
+    user: Types.ObjectId;
+
 }
 
-export const AppointmentSchema = SchemaFactory.createForClass(Appointment);
+export const AppointmentSchema = SchemaFactory.createForClass(Appointment)

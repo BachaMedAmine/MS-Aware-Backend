@@ -14,7 +14,7 @@ import { NotificationService } from 'src/notification/notification.service';
 
 const serviceAccountPath = path.join(__dirname, '../../serviceAccountKey.json');
 if (!fs.existsSync(serviceAccountPath)) {
-  console.error('❌ Firebase Service Account JSON file is missing!');
+  console.error(" Firebase Service Account JSON file is missing!");
   process.exit(1);
 }
 
@@ -25,77 +25,68 @@ admin.initializeApp({
 
 @Injectable()
 export class AppointmentService {
+
   constructor(
     @InjectModel(Appointment.name)
     private appointmentModel: Model<Appointment>,
     @InjectModel(User.name)
     private userModel: Model<User>,
     private readonly notificationService: NotificationService
-  ) {}
+  ) { }
 
-  async addAppointment(
-    addAppointmentDto: AddAppointmentDto,
-    userId: string
-  ): Promise<{ appointment }> {
+  async addAppointment(addAppointmentDto: AddAppointmentDto, userId: string): Promise<{ appointment }> {
     const { fullName, date, phone, status, fcmToken } = addAppointmentDto;
 
     const initializedStatus = status ?? false;
-    const initializedFcmToken = fcmToken ?? '';
+    const initializedFcmToken = fcmToken ?? "";
 
     const appointment = await this.appointmentModel.create({
       fullName,
       date,
       phone,
-      status: initializedStatus ? 'Upcoming' : 'Completed',
-      fcmToken: initializedFcmToken,
-      user: userId,
+      status: initializedStatus ? "Upcoming" : "Completed",
+      user: userId
     });
 
-    return { appointment };
+    return { appointment }
+
   }
 
-  async updateAppointment(
-    appointmentName: string,
-    editAppointmentDto: EditAppointmentDto
-  ): Promise<{ appointment }> {
+  async updateAppointment(appointmentName: string, editAppointmentDto: EditAppointmentDto): Promise<{ appointment }> {
     const { newFullName, newDate, newPhone } = editAppointmentDto;
-    const findAppointment = await this.appointmentModel.findOne({
-      fullName: appointmentName,
-    });
+    const findAppointment = await this.appointmentModel.findOne({ fullName: appointmentName });
     if (!findAppointment) {
-      throw new NotFoundException('No such appointment exist !');
+      throw new NotFoundException("No such appointment exist !");
     }
     const newAppointment: any = {};
     if (newFullName) {
-      newAppointment.fullName = newFullName;
+      newAppointment.fullName = newFullName
     }
     if (newDate) {
-      newAppointment.date = newDate;
+      newAppointment.date = newDate
     }
     if (newPhone) {
-      newAppointment.phone = newPhone;
+      newAppointment.phone = newPhone
     }
     const updatedAppointment = await this.appointmentModel.findOneAndUpdate(
       { fullName: findAppointment.fullName },
       { $set: newAppointment },
       { new: true }
-    );
-    return { appointment: updatedAppointment };
+    )
+    return { appointment: updatedAppointment }
   }
 
   async cancelAppointment(appointmentName: string): Promise<{ message: string }> {
-    const findAppointment = await this.appointmentModel.findOne({
-      fullName: appointmentName,
-    });
+    const findAppointment = await this.appointmentModel.findOne({ fullName: appointmentName });
     if (!findAppointment) {
       throw new NotFoundException('Appointment not found');
     }
 
     await findAppointment.updateOne({
-      status: 'Canceled',
+      status: "Canceled",
     });
 
-    return { message: 'Appointment has been cancelled!' };
+    return { message: "Appointment has been cancelled!" };
   }
 
   async displayAppointment(userId: string): Promise<{ appointment: Appointment[] }> {
@@ -105,51 +96,55 @@ export class AppointmentService {
       if (new Date(appointment.date) < new Date()) {
         await this.appointmentModel.updateOne(
           { _id: appointment._id },
-          { $set: { status: 'Completed' } }
+          { $set: { status: "Completed" } }
         );
       }
     }
-    const updatedAppointments = await this.appointmentModel.find({
-      user: userId,
-    });
+    const updatedAppointments = await this.appointmentModel.find({ user: userId });
 
     return { appointment: updatedAppointments };
   }
 
-  //@Cron('0 0 * * * ') Everyday at midnight 00:00
-  @Cron('0 * * * *')
+  @Cron('0 * * * * *')
   async checkTodayAppointments() {
     const now = new Date();
     const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
     const tomorrow = new Date(today);
     tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+
     const appointments = await this.appointmentModel.find({
       date: { $gte: today, $lt: tomorrow },
       status: 'Upcoming',
     });
+
     for (const appointment of appointments) {
-      if (appointment.fcmToken) {
-        await this.sendNotification(appointment.fcmToken, appointment.fullName, appointment.date);
+      const user = await this.userModel.findById(appointment.user);
+      if (user && user.fcmToken) {
+        await this.sendNotification(user.fcmToken, appointment.fullName, appointment.date, appointment.user.toString());
         await this.notificationService.addNotification(
           {
-            title: '📆 Appointment Reminder',
-            message: `You have an appointment with ${appointment.fullName} ! `,
+            title: ' Appointment Reminder',
+            message: `You have an appointment with ${appointment.fullName} !`,
           },
-          appointment.user.toString()
+          appointment.user.toString(),
         );
       }
     }
   }
 
-  async sendNotification(fcmToken: string, fullName: string, date: Date) {
+  async sendNotification(fcmToken: string, fullName: string, date: Date, userId: string) {
     const message = {
       notification: {
-        title: '📆 Appointment Reminder',
+        title: 'Appointment Reminder',
         body: `You have an appointment with ${fullName} !`,
+      },
+      data: {
+        screen: 'displayAppointment',
+        userId: userId, // Include userId for client-side filtering
       },
       android: {
         notification: {
-          icon: 'ms_logo', // this is the name of the icon in Android/res/drawable
+          icon: 'ms_logo',
         },
       },
       token: fcmToken,
@@ -161,13 +156,22 @@ export class AppointmentService {
     }
   }
 
-  async updateFcmToken(fullName: string, fcmToken: string): Promise<{ message: string }> {
-    const appointment = await this.appointmentModel.findOne({ fullName });
-    if (!appointment) {
-      throw new NotFoundException('Appointment not found!');
+  async updateFcmToken(userId: string, fcmToken: string): Promise<{ message: string }> {
+    const user = await this.userModel.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found!');
     }
-    await this.appointmentModel.updateOne({ fullName }, { $set: { fcmToken } });
+    await this.userModel.updateOne({ _id: userId }, { $set: { fcmToken } });
     return { message: 'FCM Token updated successfully!' };
+  }
+
+  async clearFcmToken(userId: string): Promise<{ message: string }> {
+    const user = await this.userModel.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found!');
+    }
+    await this.userModel.updateOne({ _id: userId }, { $unset: { fcmToken: '' } });
+    return { message: 'FCM Token cleared successfully!' };
   }
 
   async countAppointments(): Promise<{ message: string }> {
@@ -176,30 +180,23 @@ export class AppointmentService {
     let canceledAppointments = 0;
     let completedAppointments = 0;
     for (const appointment of findAppointment) {
-      if (appointment.status == 'Upcoming') {
+      if (appointment.status == "Upcoming") {
         upcomingAppointments++;
-      } else if (appointment.status == 'Canceled') {
+      } else if (appointment.status == "Canceled") {
         canceledAppointments++;
       } else {
         completedAppointments++;
       }
     }
-    return {
-      message:
-        'Upcoming Appointments : ' +
-        upcomingAppointments +
-        ' | Canceled Appointments : ' +
-        canceledAppointments +
-        ' | Completed Appointments : ' +
-        completedAppointments,
-    };
+    return { message: "Upcoming Appointments : " + upcomingAppointments + " | Canceled Appointments : " + canceledAppointments + " | Completed Appointments : " + completedAppointments };
   }
   async getCompletedAppointments(): Promise<{ appointment: Appointment[] }> {
     const completedAppointments = await this.appointmentModel
-      .find({ status: 'Completed' })
+      .find({ status: "Completed" })
       .sort({ createdAt: -1 }) // Sort by most recent
       .limit(2); // Get only the latest 2
 
     return { appointment: completedAppointments };
   }
+
 }

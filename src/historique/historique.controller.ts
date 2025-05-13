@@ -16,17 +16,17 @@ constructor(private readonly historiqueService: HistoriqueService) {}
 @UseGuards(JwtAuthGuard)
 @UseInterceptors(FileInterceptor('screenshot', FileUploadService.multerOptions))
 async uploadScreenshot(@UploadedFile() file: Express.Multer.File, @Request() req) {
-console.log("Headers reçus :", req.headers);
-console.log(" Utilisateur JWT décodé :", req.user);
+console.log("🔹 Headers reçus :", req.headers);
+console.log("🔹 Utilisateur JWT décodé :", req.user);
 
 if (!file) {
-console.log(" Aucun fichier reçu !");
+console.log("❌ Aucun fichier reçu !");
 return { message: 'Aucun fichier envoyé !' };
 }
 
 const userId = req.user?.userId;
 if (!userId) {
-console.log(" L'utilisateur n'est pas défini !");
+console.log("❌ L'utilisateur n'est pas défini !");
 return { message: "Utilisateur non authentifié !" };
 }
 const bodyPartName = req.body.bodyPartName || '';
@@ -34,16 +34,16 @@ const bodyPartIndex = (req.body.bodyPartIndex || '')
 .split(',')
 .map((i: string) => Number(i.trim()))
 .filter((i: number) => !isNaN(i));
-console.log(" bodyPartName:", bodyPartName);
-console.log(" bodyPartIndex:", bodyPartIndex);
+console.log("🔍 bodyPartName:", bodyPartName);
+console.log("🔍 bodyPartIndex:", bodyPartIndex);
 
 const fileUrl = `/uploads/images/${file.filename}`;
 const userText = req.body.userText || "Aucune description fournie";
 const fcmToken = req.body.fcmToken || '';
 
-console.log(" Headers reçus :", req.headers);
-console.log(" Fichier reçu :", file);
-console.log(" Body reçu :", req.body);
+console.log("🔹 Headers reçus :", req.headers);
+console.log("🔹 Fichier reçu :", file);
+console.log("🔹 Body reçu :", req.body);
 
 
 return this.historiqueService.saveHistory(
@@ -61,7 +61,7 @@ fcmToken
 @UseGuards(JwtAuthGuard)
 async getHistorique(@Request() req) {
 const userId = req.user?.userId;
-console.log(" Récupération de l'historique pour l'utilisateur connecté, ID:", userId);
+console.log("📜 Récupération de l'historique pour l'utilisateur connecté, ID:", userId);
 
 if (!userId) {
 return { message: "Utilisateur non authentifié !" };
@@ -76,7 +76,7 @@ return this.historiqueService.getHistoryByUserId(userId);
 @UseGuards(JwtAuthGuard)
 async getHistoriqueGrouped(@Request() req) {
 const userId = req.user?.userId;
-console.log(" Récupération de l'historique groupé pour l'utilisateur:", userId);
+console.log("📜 Récupération de l'historique groupé pour l'utilisateur:", userId);
 if (!userId) {
 return { message: "Utilisateur non authentifié !" };
 }
@@ -86,42 +86,51 @@ return this.historiqueService.getHistoryGroupedByDate(userId);
 @Get('/by-date')
 @UseGuards(JwtAuthGuard)
 async getHistoriqueByDate(
-@Request() req,
-@Query('start') startDate: string,
-@Query('end') endDate?: string,
+  @Request() req,
+  @Query('start') startDate: string,
+  @Query('end') endDate?: string,
 ) {
-const userId = req.user?.userId;
-if (!userId) {
-return { message: "Utilisateur non authentifié !" };
+  const userId = req.user?.userId;
+  if (!userId) {
+    return { message: "Utilisateur non authentifié !" };
+  }
+
+  return this.historiqueService.getHistoryByDate(userId, startDate, endDate);
 }
 
-return this.historiqueService.getHistoryByDate(userId, startDate, endDate);
-}
-
-//  Nouvelle route pour récupérer seulement les historiques needing check
+// 🔵 Nouvelle route pour récupérer seulement les historiques needing check
 @Get('/needs-check')
 @UseGuards(JwtAuthGuard)
 async getNeedsPainCheck(@Request() req) {
-const userId = req.user?.userId;
-if (!userId) {
-return { message: "Utilisateur non authentifié !" };
-}
-return this.historiqueService.getHistoriquesNeedingCheck(userId);
+  const userId = req.user?.userId;
+  if (!userId) {
+    return { message: "Utilisateur non authentifié !" };
+  }
+  return this.historiqueService.getHistoriquesNeedingCheck(userId);
 }
 
 // PATCH /historique/check-douleur
 @Patch('/check-douleur')
 @UseGuards(JwtAuthGuard)
 async updateDouleurStatus(
-@Body() body: { historiqueId: string; stillHurting: boolean },
-@Request() req
+  @Body() body: { historiqueId: string; stillHurting: boolean },
+  @Request() req
 ) {
-const userId = req.user?.userId;
-return this.historiqueService.updatePainStatus(body.historiqueId, body.stillHurting);
+  const userId = req.user?.userId;
+  return this.historiqueService.updatePainStatus(body.historiqueId, body.stillHurting);
 }
 
 @Put('updateFcmToken')
-async updateFcmToken(@Body() body: { historiqueId: string, fcmToken: string }) {
-return this.historiqueService.updateFcmToken(body.historiqueId, body.fcmToken);
+  async updateFcmToken(@Body() body: { historiqueId: string, fcmToken: string }) {
+    return this.historiqueService.updateFcmToken(body.historiqueId, body.fcmToken);
+  }
+
+  @Post('/predict-next-relapse')
+@UseGuards(JwtAuthGuard)
+async predictNextRelapse(@Request() req) {
+  const userId = req.user?.userId;
+  if (!userId) return { message: "Utilisateur non authentifié !" };
+
+  return this.historiqueService.prepareRelapsePrediction(userId);
 }
 }

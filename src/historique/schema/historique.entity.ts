@@ -9,13 +9,13 @@ export class Historique extends Document {
 imageUrl: string; // Lien de l’image capturée
 
 @Prop({
-type: Object,
-required: true,
-})
-generatedDescription: {
-fr: string;
-en: string;
-};
+    type: Object,
+    required: true,
+  })
+  generatedDescription: {
+    fr: string;
+    en: string;
+  };
 
 @Prop({ type: Types.ObjectId, ref: 'User', required: true })
 user: User; // Référence à l’utilisateur
@@ -42,10 +42,10 @@ endTime?: Date; // Heure exacte où elle a été stoppée (si applicable)
 lastCheckTime?: Date; // La dernière fois qu'on a vérifié via pop-up
 
 @Prop({ default: false })
-needsPainCheck: boolean; // pour signaler que Flutter doit demander confirmation
+needsPainCheck: boolean; // 🔥 pour signaler que Flutter doit demander confirmation
 
 @Prop({ default: false })
-wasOver24h?: boolean; //  Si la douleur a dépassé 24h
+wasOver24h?: boolean; // ✅ Si la douleur a dépassé 24h
 
 @Prop()
 fcmToken: string

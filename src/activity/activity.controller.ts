@@ -8,7 +8,8 @@ export class ActivityController {
 
   // Endpoint to get the latest 4 activities
   @Get()
-  async getActivities(): Promise<any[]> {
-    return this.activityService.getActivities();
-  }
+async getActivities(
+): Promise<any[]> {
+  return this.activityService.getActivities();
+}
 }

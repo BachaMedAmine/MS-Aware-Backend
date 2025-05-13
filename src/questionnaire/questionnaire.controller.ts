@@ -25,7 +25,7 @@ export class QuestionnaireController {
   @Post('submit')
   async submitAnswers(
     @Req() req: Request,
-    @Body() body: { answers: { questionId: string; answer: string }[] }
+    @Body() body: { answers: { questionId: string, answer: string }[] }
   ) {
     const user = req.user as any;
     return this.questionnaireService.submitAnswers(user._id, body.answers);
@@ -38,4 +38,12 @@ export class QuestionnaireController {
     const user = req.user as any;
     return this.questionnaireService.canSubmit(user._id);
   }
+  @UseGuards(JwtAuthGuard)
+  @Get('weekly-submissions')
+  async getWeeklyQuizSubmissions(@Req() req: Request) {
+    const user = req.user as any;
+    return this.questionnaireService.getWeeklyQuizSubmissions(user._id);
+  }
+  
+  
 }

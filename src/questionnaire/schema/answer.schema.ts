@@ -15,7 +15,7 @@ export class Answer extends Document {
   @Prop({ required: true })
   submittedAt: Date; // when the user submitted this answer
 
-  @Prop({ type: Number, default: 0 }) // 🔥 ADD THIS LINE
+  @Prop({ type: Number, default: 0 })
   status: number;
 }
 

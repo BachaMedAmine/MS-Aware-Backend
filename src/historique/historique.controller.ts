@@ -20,8 +20,8 @@ console.log("🔹 Headers reçus :", req.headers);
 console.log("🔹 Utilisateur JWT décodé :", req.user);
 
 if (!file) {
-console.log("❌ Aucun fichier reçu !");
-return { message: 'Aucun fichier envoyé !' };
+  console.log("❌ Aucun fichier reçu !");
+  return { message: 'Aucun fichier envoyé !' };
 }
 
 const userId = req.user?.userId;
@@ -125,12 +125,15 @@ async updateDouleurStatus(
     return this.historiqueService.updateFcmToken(body.historiqueId, body.fcmToken);
   }
 
+  
   @Post('/predict-next-relapse')
-@UseGuards(JwtAuthGuard)
-async predictNextRelapse(@Request() req) {
+  @UseGuards(JwtAuthGuard)
+  async predictNextRelapse(@Request() req) {
   const userId = req.user?.userId;
   if (!userId) return { message: "Utilisateur non authentifié !" };
-
+  
   return this.historiqueService.prepareRelapsePrediction(userId);
-}
+  }
+  
+
 }

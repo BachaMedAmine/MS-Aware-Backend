@@ -361,8 +361,8 @@ async getAllUsersWithFcmToken(): Promise<User[]> {
 return this.userModel.find({ fcmToken: { $exists: true, $ne: null } }).lean();
 }
 //Notification Quiz
-//@Cron('0 0 * * 1') Every monday at midnight 00:00
-@Cron('0 * * * * *')// Every minute
+@Cron('0 0 * * 1') 
+//@Cron('0 * * * * *')// Every minute
 async sendWeeklyQuizReminder() {
 const users = await this.userModel.find({ fcmToken: { $exists: true, $ne: "" } }).lean();
 

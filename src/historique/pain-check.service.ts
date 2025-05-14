@@ -17,14 +17,14 @@ export class PainCheckService {
   ) { }
 
 
-  @Cron('0 * * * * *') // toutes les 5 minutes sans secondes
+  @Cron('0 0 */6 * * *') // every 6 hours at minute 0 and second 0
   async followUpPain() {
     const now = new Date();
-    const cinqHeuresAvant = new Date(now.getTime() - (5 * 60 * 1000));
-
+    const sixHoursAgo = new Date(now.getTime() - 6 * 60 * 60 * 1000);
+  
     const douleurs = await this.historiqueModel.find({
       isActive: true,
-      lastCheckTime: { $lte: cinqHeuresAvant },
+      lastCheckTime: { $lte: sixHoursAgo },
     });
 
 

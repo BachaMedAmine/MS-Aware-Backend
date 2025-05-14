@@ -10,7 +10,7 @@ export class ActivityService {
   private readonly logger = new Logger(ActivityService.name);
   constructor(@InjectModel(Activity.name) private activityModel: Model<Activity>) {}
 
-  private readonly apiKey = 'AIzaSyC_uyUqse59UGc0BlLgxrYrlyxc8c6dzdg'; // Replace with your real API key
+  private readonly apiKey = 'AIzaSyCJ_-O3yDupqTLSspcsC_NB9bdbdzg6i8E'; // Replace with your real API key
   private readonly apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${this.apiKey}`;
 
   // 🔥 Fetch & Save AI-generated Activities (for testing, every 5 minutes)

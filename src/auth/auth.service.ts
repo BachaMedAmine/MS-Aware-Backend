@@ -478,7 +478,9 @@ throw new Error(
 `Missing Apple configuration values: clientId=${clientId}, teamId=${teamId}, keyId=${keyId}, privateKeyDefined=${!!APPLE_PRIVATE_KEY}`
 );
 }
-const privateKey = APPLE_PRIVATE_KEY.replace(/\\n/g, '\n');
+const privateKey = APPLE_PRIVATE_KEY.includes('\\n')
+  ? APPLE_PRIVATE_KEY.replace(/\\n/g, '\n')
+  : APPLE_PRIVATE_KEY;
 const clientSecret = appleSigninAuth.getClientSecret({
 clientID: clientId,
 teamID: teamId,
